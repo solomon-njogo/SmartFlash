@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../features/auth/providers/auth_provider.dart';
 import 'screens/splash_screen.dart';
 import '../features/auth/views/auth_screen.dart';
@@ -14,6 +16,10 @@ class AppRouter {
   static final GoRouter _router = GoRouter(
     initialLocation: '/',
     debugLogDiagnostics: true,
+    // Ensure the router reevaluates redirects when auth state changes
+    refreshListenable: GoRouterRefreshStream(
+      Supabase.instance.client.auth.onAuthStateChange,
+    ),
     redirect: (context, state) {
       final authProvider = context.read<AuthProvider>();
       final isAuthenticated = authProvider.isAuthenticated;
@@ -245,5 +251,22 @@ class AppNavigation {
   /// Navigate to statistics
   static void goStatistics(BuildContext context) {
     go(context, '/statistics');
+  }
+}
+
+/// Simple Listenable that notifies GoRouter when the provided stream emits
+class GoRouterRefreshStream extends ChangeNotifier {
+  late final StreamSubscription<dynamic> _subscription;
+
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    _subscription = stream.asBroadcastStream().listen((_) {
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
 }
