@@ -106,6 +106,9 @@ class DeckModel extends HiveObject {
   @HiveField(24)
   final Map<String, dynamic>? metadata;
 
+  @HiveField(25)
+  final String? courseId;
+
   DeckModel({
     required this.id,
     required this.name,
@@ -132,6 +135,7 @@ class DeckModel extends HiveObject {
     this.isAIGenerated = false,
     this.sourceFileUrl,
     this.metadata,
+    this.courseId,
   });
 
   /// Create DeckModel from JSON
@@ -168,6 +172,7 @@ class DeckModel extends HiveObject {
     bool? isAIGenerated,
     String? sourceFileUrl,
     Map<String, dynamic>? metadata,
+    String? courseId,
   }) {
     return DeckModel(
       id: id ?? this.id,
@@ -195,6 +200,7 @@ class DeckModel extends HiveObject {
       isAIGenerated: isAIGenerated ?? this.isAIGenerated,
       sourceFileUrl: sourceFileUrl ?? this.sourceFileUrl,
       metadata: metadata ?? this.metadata,
+      courseId: courseId ?? this.courseId,
     );
   }
 

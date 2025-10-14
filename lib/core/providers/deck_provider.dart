@@ -6,12 +6,14 @@ class DeckModel {
   final String title;
   final String description;
   final String category;
+  final String? courseId;
 
   DeckModel({
     required this.id,
     required this.title,
     required this.description,
     required this.category,
+    this.courseId,
   });
 }
 
@@ -44,19 +46,114 @@ class DeckProvider extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      // Mock data for now
+      // Sample decks organized by courses
       _decks = [
+        // Computer Science 101 decks
         DeckModel(
-          id: '1',
-          title: 'Sample Deck 1',
-          description: 'A sample flashcard deck',
-          category: 'General',
+          id: 'cs101_deck1',
+          title: 'Programming Basics',
+          description: 'Variables, functions, and control structures',
+          category: 'Technology',
+          courseId: 'cs101',
         ),
         DeckModel(
-          id: '2',
-          title: 'Sample Deck 2',
-          description: 'Another sample flashcard deck',
+          id: 'cs101_deck2',
+          title: 'Data Structures',
+          description: 'Arrays, lists, stacks, and queues',
+          category: 'Technology',
+          courseId: 'cs101',
+        ),
+        DeckModel(
+          id: 'cs101_deck3',
+          title: 'Algorithms',
+          description: 'Sorting, searching, and algorithm complexity',
+          category: 'Technology',
+          courseId: 'cs101',
+        ),
+
+        // Biology Advanced decks
+        DeckModel(
+          id: 'bio_adv_deck1',
+          title: 'Cell Biology',
+          description: 'Cell structure, organelles, and functions',
           category: 'Science',
+          courseId: 'bio_adv',
+        ),
+        DeckModel(
+          id: 'bio_adv_deck2',
+          title: 'Genetics',
+          description: 'DNA, RNA, genes, and inheritance',
+          category: 'Science',
+          courseId: 'bio_adv',
+        ),
+
+        // World History decks
+        DeckModel(
+          id: 'hist_deck1',
+          title: 'Ancient Civilizations',
+          description: 'Egypt, Greece, Rome, and early empires',
+          category: 'History',
+          courseId: 'world_history',
+        ),
+        DeckModel(
+          id: 'hist_deck2',
+          title: 'Medieval Period',
+          description: 'Middle Ages, feudalism, and crusades',
+          category: 'History',
+          courseId: 'world_history',
+        ),
+        DeckModel(
+          id: 'hist_deck3',
+          title: 'Modern Era',
+          description: 'Renaissance, revolutions, and world wars',
+          category: 'History',
+          courseId: 'world_history',
+        ),
+
+        // Mathematics decks
+        DeckModel(
+          id: 'math_deck1',
+          title: 'Algebra',
+          description: 'Linear equations, functions, and inequalities',
+          category: 'Mathematics',
+          courseId: 'math_course',
+        ),
+        DeckModel(
+          id: 'math_deck2',
+          title: 'Geometry',
+          description: 'Angles, triangles, and circle theorems',
+          category: 'Mathematics',
+          courseId: 'math_course',
+        ),
+        DeckModel(
+          id: 'math_deck3',
+          title: 'Calculus',
+          description: 'Derivatives, integrals, and limits',
+          category: 'Mathematics',
+          courseId: 'math_course',
+        ),
+        DeckModel(
+          id: 'math_deck4',
+          title: 'Statistics',
+          description: 'Probability, distributions, and data analysis',
+          category: 'Mathematics',
+          courseId: 'math_course',
+        ),
+
+        // Spanish Language decks
+        DeckModel(
+          id: 'spanish_deck1',
+          title: 'Vocabulary A1',
+          description: 'Basic Spanish words and phrases',
+          category: 'Language',
+          courseId: 'spanish_lang',
+        ),
+        DeckModel(
+          id: 'spanish_deck2',
+          title: 'Common Phrases',
+          description: 'Greetings, travel, and daily expressions',
+          category: 'Language',
+          courseId: 'spanish_lang',
         ),
       ];
       notifyListeners();
@@ -163,6 +260,20 @@ class DeckProvider extends ChangeNotifier {
   /// Get decks by category
   List<DeckModel> getDecksByCategory(String category) {
     return _decks.where((deck) => deck.category == category).toList();
+  }
+
+  /// Get decks by course ID
+  List<DeckModel> getDecksByCourseId(String courseId) {
+    return _decks.where((deck) => deck.courseId == courseId).toList();
+  }
+
+  /// Load decks with optional course ID filter
+  Future<void> loadDecks({String? courseId}) async {
+    await _loadDecks();
+    if (courseId != null) {
+      _decks = getDecksByCourseId(courseId);
+      notifyListeners();
+    }
   }
 
   /// Set loading state

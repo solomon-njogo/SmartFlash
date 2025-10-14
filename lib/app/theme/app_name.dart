@@ -207,6 +207,15 @@ class AppName extends StatelessWidget {
   /// Custom text style override
   final TextStyle? style;
 
+  /// If true (default), the text color adapts to the active theme
+  /// to ensure proper contrast in light/dark modes. Set to false to
+  /// preserve the color defined in [style] or the variant's default.
+  final bool useThemeColor;
+
+  /// Optional explicit color override. If provided, this wins over
+  /// [useThemeColor] computed color.
+  final Color? color;
+
   /// Text alignment
   final TextAlign? textAlign;
 
@@ -229,6 +238,8 @@ class AppName extends StatelessWidget {
     super.key,
     this.variant = AppNameVariant.header,
     this.style,
+    this.useThemeColor = true,
+    this.color,
     this.textAlign,
     this.maxLines,
     this.overflow,
@@ -240,7 +251,34 @@ class AppName extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appNameStyle = _getStyleForVariant(variant);
-    final effectiveStyle = style ?? appNameStyle;
+    final baseStyle = style ?? appNameStyle;
+
+    // Determine effective color
+    TextStyle effectiveStyle = baseStyle;
+    final Color? explicit = color;
+    if (explicit != null) {
+      effectiveStyle = baseStyle.copyWith(color: explicit);
+    } else if (useThemeColor) {
+      final cs = Theme.of(context).colorScheme;
+      Color themedColor;
+      switch (variant) {
+        case AppNameVariant.button:
+          themedColor = cs.onPrimary;
+          break;
+        case AppNameVariant.appBar:
+          themedColor = cs.onSurface;
+          break;
+        case AppNameVariant.dark:
+          themedColor = cs.onPrimary;
+          break;
+        case AppNameVariant.light:
+          themedColor = cs.onBackground;
+          break;
+        default:
+          themedColor = cs.onBackground;
+      }
+      effectiveStyle = baseStyle.copyWith(color: themedColor);
+    }
 
     if (showTagline) {
       return Column(

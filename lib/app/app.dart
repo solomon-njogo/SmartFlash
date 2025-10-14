@@ -6,6 +6,8 @@ import 'theme/app_theme.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../core/providers/deck_provider.dart';
 import '../core/providers/quiz_provider.dart';
+import '../core/providers/course_provider.dart';
+import '../core/providers/course_material_provider.dart';
 import '../core/providers/settings_provider.dart';
 
 /// Main application widget with MaterialApp configuration
@@ -19,6 +21,8 @@ class SmartFlashApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => DeckProvider()),
         ChangeNotifierProvider(create: (_) => QuizProvider()),
+        ChangeNotifierProvider(create: (_) => CourseProvider()),
+        ChangeNotifierProvider(create: (_) => CourseMaterialProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
