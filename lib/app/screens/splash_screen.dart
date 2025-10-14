@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_name.dart';
 
 /// Splash screen shown during app initialization
 class SplashScreen extends StatelessWidget {
@@ -17,22 +18,7 @@ class SplashScreen extends StatelessWidget {
               color: Theme.of(context).primaryColor,
             ),
             const SizedBox(height: 24),
-            Text(
-              'SmartFlash',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'AI-Powered Study App',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.color?.withOpacity(0.7),
-              ),
-            ),
+            const AppName(variant: AppNameVariant.splash, showTagline: true),
             const SizedBox(height: 48),
             const CircularProgressIndicator(),
           ],

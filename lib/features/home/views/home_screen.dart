@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../features/auth/providers/auth_provider.dart';
-import '../../core/providers/deck_provider.dart';
-import '../router.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../../core/providers/deck_provider.dart';
+import '../../../app/router.dart';
+import '../../../app/theme/app_name.dart';
 
 /// Home screen showing user's decks and quick actions
 class HomeScreen extends StatelessWidget {
@@ -12,7 +13,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SmartFlash'),
+        title: const AppName(variant: AppNameVariant.appBar),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),

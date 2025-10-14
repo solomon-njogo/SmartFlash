@@ -1,11 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import '../features/auth/providers/auth_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/splash_screen.dart';
 import '../features/auth/views/auth_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/profile_screen.dart';
+import '../features/home/views/home_screen.dart';
+import '../features/auth/views/profile_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/other_screens.dart';
 
@@ -14,9 +14,15 @@ class AppRouter {
   static final GoRouter _router = GoRouter(
     initialLocation: '/',
     debugLogDiagnostics: true,
+    // Ensure the router reevaluates redirects when auth state changes
+    refreshListenable: GoRouterRefreshStream(
+      Supabase.instance.client.auth.onAuthStateChange,
+    ),
     redirect: (context, state) {
-      final authProvider = context.read<AuthProvider>();
-      final isAuthenticated = authProvider.isAuthenticated;
+      // Avoid relying on Provider here because the redirect context may not have access
+      // to ancestor providers depending on GoRouter's internal context.
+      final isAuthenticated =
+          Supabase.instance.client.auth.currentSession?.user != null;
       final isAuthRoute = state.matchedLocation.startsWith('/auth');
       final isSplashRoute = state.matchedLocation == '/';
 
@@ -25,18 +31,13 @@ class AppRouter {
         return '/auth';
       }
 
-      // If user is not authenticated and on splash route, redirect to auth
-      if (!isAuthenticated && isSplashRoute) {
-        return '/auth';
+      // If on splash, decide based on current auth state
+      if (isSplashRoute) {
+        return isAuthenticated ? '/home' : '/auth';
       }
 
       // If user is authenticated and on auth route, redirect to home
       if (isAuthenticated && isAuthRoute) {
-        return '/home';
-      }
-
-      // If user is authenticated and on splash route, redirect to home
-      if (isAuthenticated && isSplashRoute) {
         return '/home';
       }
 
@@ -201,32 +202,32 @@ class AppNavigation {
 
   /// Navigate to profile
   static void goProfile(BuildContext context) {
-    go(context, '/profile');
+    push(context, '/profile');
   }
 
   /// Navigate to settings
   static void goSettings(BuildContext context) {
-    go(context, '/settings');
+    push(context, '/settings');
   }
 
   /// Navigate to create deck
   static void goCreateDeck(BuildContext context) {
-    go(context, '/create-deck');
+    push(context, '/create-deck');
   }
 
   /// Navigate to edit deck
   static void goEditDeck(BuildContext context, String deckId) {
-    go(context, '/edit-deck/$deckId');
+    push(context, '/edit-deck/$deckId');
   }
 
   /// Navigate to deck details
   static void goDeckDetails(BuildContext context, String deckId) {
-    go(context, '/deck-details/$deckId');
+    push(context, '/deck-details/$deckId');
   }
 
   /// Navigate to study session
   static void goStudySession(BuildContext context, String deckId) {
-    go(context, '/study-session/$deckId');
+    push(context, '/study-session/$deckId');
   }
 
   /// Navigate to study results
@@ -234,16 +235,33 @@ class AppNavigation {
     BuildContext context,
     Map<String, dynamic> results,
   ) {
-    go(context, '/study-results', extra: results);
+    push(context, '/study-results', extra: results);
   }
 
   /// Navigate to search
   static void goSearch(BuildContext context) {
-    go(context, '/search');
+    push(context, '/search');
   }
 
   /// Navigate to statistics
   static void goStatistics(BuildContext context) {
-    go(context, '/statistics');
+    push(context, '/statistics');
+  }
+}
+
+/// Simple Listenable that notifies GoRouter when the provided stream emits
+class GoRouterRefreshStream extends ChangeNotifier {
+  late final StreamSubscription<dynamic> _subscription;
+
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    _subscription = stream.asBroadcastStream().listen((_) {
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
 }

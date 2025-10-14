@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../features/auth/providers/auth_provider.dart';
-import '../router.dart';
+import '../providers/auth_provider.dart';
+import '../../../app/router.dart';
 
 /// Profile screen for user information and account management
 class ProfileScreen extends StatelessWidget {
@@ -28,16 +28,29 @@ class ProfileScreen extends StatelessWidget {
             child: Column(
               children: [
                 // Profile header
-                CircleAvatar(
-                  radius: 60,
-                  backgroundColor: Theme.of(
-                    context,
-                  ).primaryColor.withOpacity(0.1),
-                  child: Icon(
-                    Icons.person,
-                    size: 60,
-                    color: Theme.of(context).primaryColor,
-                  ),
+                Builder(
+                  builder: (context) {
+                    final photoUrl =
+                        user?.userMetadata?['avatar_url'] as String?;
+                    return CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).primaryColor.withOpacity(0.1),
+                      backgroundImage:
+                          photoUrl != null && photoUrl.isNotEmpty
+                              ? NetworkImage(photoUrl)
+                              : null,
+                      child:
+                          (photoUrl == null || photoUrl.isEmpty)
+                              ? Icon(
+                                Icons.person,
+                                size: 60,
+                                color: Theme.of(context).primaryColor,
+                              )
+                              : null,
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 Text(
