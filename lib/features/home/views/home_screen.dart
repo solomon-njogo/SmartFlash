@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../features/auth/providers/auth_provider.dart';
-import '../../core/providers/deck_provider.dart';
-import '../router.dart';
-import '../theme/app_name.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../../../core/providers/deck_provider.dart';
+import '../../../app/router.dart';
+import '../../../app/theme/app_name.dart';
 
 /// Home screen showing user's decks and quick actions
 class HomeScreen extends StatelessWidget {

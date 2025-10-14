@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/splash_screen.dart';
 import '../features/auth/views/auth_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/profile_screen.dart';
+import '../features/home/views/home_screen.dart';
+import '../features/auth/views/profile_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/other_screens.dart';
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../features/auth/providers/auth_provider.dart';
-import '../router.dart';
+import '../providers/auth_provider.dart';
+import '../../../app/router.dart';
 
 /// Profile screen for user information and account management
 class ProfileScreen extends StatelessWidget {
