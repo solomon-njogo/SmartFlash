@@ -5,6 +5,7 @@ import '../../../app/router.dart';
 import '../../../app/theme/app_name.dart';
 import '../../../app/app_colors.dart';
 import '../../../app/app_text_styles.dart';
+import '../../../app/widgets/app_logo.dart';
 
 /// Authentication screen with onboarding-style UI
 class AuthScreen extends StatefulWidget {
@@ -60,26 +61,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildAppIcon() {
-    return Container(
-      width: 120,
-      height: 120,
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: const Icon(
-        Icons.flash_on,
-        size: 60,
-        color: AppColors.textOnPrimary,
-      ),
-    );
+    return const AppLogo(size: 120, borderRadius: 20);
   }
 
   Widget _buildWelcomeSection() {

@@ -39,6 +39,7 @@ dependencies:
   intl: ^0.20.2
   flutter_dotenv: ^5.1.0
   package_info_plus: ^8.0.0
+  flutter_launcher_icons: ^0.13.1
   
   # Data layer dependencies
   hive: ^2.2.3
@@ -80,6 +81,15 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - .env
+    - web/icons/
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "web/icons/Icon-512.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "web/icons/Icon-192.png"
+  remove_alpha_ios: true
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
