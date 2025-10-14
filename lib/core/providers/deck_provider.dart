@@ -44,18 +44,96 @@ class DeckProvider extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      // Mock data for now
+      // Mock data for now (15 sample decks)
       _decks = [
         DeckModel(
           id: '1',
-          title: 'Sample Deck 1',
-          description: 'A sample flashcard deck',
-          category: 'General',
+          title: 'Biology Basics',
+          description: 'Cells, DNA, and the fundamentals of life',
+          category: 'Science',
         ),
         DeckModel(
           id: '2',
-          title: 'Sample Deck 2',
-          description: 'Another sample flashcard deck',
+          title: 'Chemistry Essentials',
+          description: 'Atoms, bonding, periodic table trends',
+          category: 'Science',
+        ),
+        DeckModel(
+          id: '3',
+          title: 'World History 101',
+          description: 'Ancient to modern key events and figures',
+          category: 'History',
+        ),
+        DeckModel(
+          id: '4',
+          title: 'US Capitals',
+          description: 'States and their capital cities',
+          category: 'Geography',
+        ),
+        DeckModel(
+          id: '5',
+          title: 'Algebra I',
+          description: 'Linear equations, functions, and inequalities',
+          category: 'Math',
+        ),
+        DeckModel(
+          id: '6',
+          title: 'Geometry',
+          description: 'Angles, triangles, and circle theorems',
+          category: 'Math',
+        ),
+        DeckModel(
+          id: '7',
+          title: 'Physics Foundations',
+          description: 'Motion, forces, energy, and waves',
+          category: 'Science',
+        ),
+        DeckModel(
+          id: '8',
+          title: 'Programming in Dart',
+          description: 'Syntax, types, collections, and async',
+          category: 'Technology',
+        ),
+        DeckModel(
+          id: '9',
+          title: 'Flutter Widgets',
+          description: 'Common widgets and layout patterns',
+          category: 'Technology',
+        ),
+        DeckModel(
+          id: '10',
+          title: 'Spanish Vocabulary A1',
+          description: 'Everyday words and phrases for beginners',
+          category: 'Language',
+        ),
+        DeckModel(
+          id: '11',
+          title: 'French Useful Phrases',
+          description: 'Greetings, travel, dining expressions',
+          category: 'Language',
+        ),
+        DeckModel(
+          id: '12',
+          title: 'Anatomy: Human Body',
+          description: 'Major systems and organ functions',
+          category: 'Medicine',
+        ),
+        DeckModel(
+          id: '13',
+          title: 'Literary Devices',
+          description: 'Metaphor, irony, alliteration, and more',
+          category: 'Literature',
+        ),
+        DeckModel(
+          id: '14',
+          title: 'Intro to Psychology',
+          description: 'Key theories, experiments, and terms',
+          category: 'Social Science',
+        ),
+        DeckModel(
+          id: '15',
+          title: 'Astronomy Highlights',
+          description: 'Stars, planets, galaxies, and cosmology',
           category: 'Science',
         ),
       ];
