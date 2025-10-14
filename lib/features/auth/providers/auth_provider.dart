@@ -100,6 +100,28 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Sign in with Google
+  Future<bool> signInWithGoogle() async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final response = await _supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'io.supabase.smartflash://login-callback/',
+      );
+
+      // OAuth sign-in returns a bool indicating success
+      // The actual user will be set through the auth state change listener
+      return response;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Reset password
   Future<bool> resetPassword(String email) async {
     try {
