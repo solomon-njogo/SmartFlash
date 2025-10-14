@@ -202,32 +202,32 @@ class AppNavigation {
 
   /// Navigate to profile
   static void goProfile(BuildContext context) {
-    go(context, '/profile');
+    push(context, '/profile');
   }
 
   /// Navigate to settings
   static void goSettings(BuildContext context) {
-    go(context, '/settings');
+    push(context, '/settings');
   }
 
   /// Navigate to create deck
   static void goCreateDeck(BuildContext context) {
-    go(context, '/create-deck');
+    push(context, '/create-deck');
   }
 
   /// Navigate to edit deck
   static void goEditDeck(BuildContext context, String deckId) {
-    go(context, '/edit-deck/$deckId');
+    push(context, '/edit-deck/$deckId');
   }
 
   /// Navigate to deck details
   static void goDeckDetails(BuildContext context, String deckId) {
-    go(context, '/deck-details/$deckId');
+    push(context, '/deck-details/$deckId');
   }
 
   /// Navigate to study session
   static void goStudySession(BuildContext context, String deckId) {
-    go(context, '/study-session/$deckId');
+    push(context, '/study-session/$deckId');
   }
 
   /// Navigate to study results
@@ -235,17 +235,17 @@ class AppNavigation {
     BuildContext context,
     Map<String, dynamic> results,
   ) {
-    go(context, '/study-results', extra: results);
+    push(context, '/study-results', extra: results);
   }
 
   /// Navigate to search
   static void goSearch(BuildContext context) {
-    go(context, '/search');
+    push(context, '/search');
   }
 
   /// Navigate to statistics
   static void goStatistics(BuildContext context) {
-    go(context, '/statistics');
+    push(context, '/statistics');
   }
 }
 
