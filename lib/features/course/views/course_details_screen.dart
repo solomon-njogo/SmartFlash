@@ -22,6 +22,7 @@ class CourseDetailsScreen extends StatefulWidget {
 class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   int _currentIndex = 0;
   CourseModel? _course;
+  bool _isHeaderExpanded = true;
 
   @override
   void initState() {
@@ -64,13 +65,20 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     return Scaffold(
       backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: Text(_course!.name),
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        title: Text(
+          _course!.name,
+          style: AppTextStyles.titleLarge.copyWith(
+            color: colorScheme.onSurface,
+          ),
+        ),
         actions: [
           IconButton(
             onPressed: () {
               // TODO: Implement edit course
             },
-            icon: const Icon(Icons.edit),
+            icon: Icon(Icons.edit, color: colorScheme.onSurface),
           ),
         ],
       ),
@@ -122,7 +130,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     final colorScheme = theme.colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
@@ -130,103 +137,146 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Course icon and basic info
-          Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: _course!.color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
+          // Always visible header with course icon, name, and collapse button
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: _course!.color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    _getIconData(_course!.iconName ?? 'folder'),
+                    color: _course!.color,
+                    size: 28,
+                  ),
                 ),
-                child: Icon(
-                  _getIconData(_course!.iconName ?? 'folder'),
-                  color: _course!.color,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _course!.name,
-                      style: AppTextStyles.headlineSmall.copyWith(
-                        color: colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (_course!.description != null) ...[
-                      const SizedBox(height: 4),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        _course!.description!,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                        _course!.name,
+                        style: AppTextStyles.headlineSmall.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
+                      if (_course!.description != null &&
+                          _isHeaderExpanded) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          _course!.description!,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Statistics
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              _buildStatChip(
-                context,
-                Icons.library_books,
-                '${_course!.totalDecks}',
-                'Decks',
-              ),
-              _buildStatChip(
-                context,
-                Icons.quiz,
-                '${_course!.totalQuizzes}',
-                'Quizzes',
-              ),
-              _buildStatChip(
-                context,
-                Icons.attach_file,
-                '${_course!.totalMaterials}',
-                'Materials',
-              ),
-            ],
-          ),
-          // Tags
-          if (_course!.tags.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children:
-                  _course!.tags.map((tag) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _course!.color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        tag,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: _course!.color,
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _isHeaderExpanded = !_isHeaderExpanded;
+                    });
+                  },
+                  icon: AnimatedRotation(
+                    turns: _isHeaderExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
+          // Collapsible content
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child:
+                _isHeaderExpanded
+                    ? Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Description (if not shown above)
+                          if (_course!.description != null) ...[
+                            Text(
+                              _course!.description!,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          // Statistics
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 8,
+                            children: [
+                              _buildStatChip(
+                                context,
+                                Icons.library_books,
+                                '${_course!.totalDecks}',
+                                'Decks',
+                              ),
+                              _buildStatChip(
+                                context,
+                                Icons.quiz,
+                                '${_course!.totalQuizzes}',
+                                'Quizzes',
+                              ),
+                              _buildStatChip(
+                                context,
+                                Icons.attach_file,
+                                '${_course!.totalMaterials}',
+                                'Materials',
+                              ),
+                            ],
+                          ),
+                          // Tags
+                          if (_course!.tags.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children:
+                                  _course!.tags.map((tag) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _course!.color.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Text(
+                                        tag,
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          color: _course!.color,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    )
+                    : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
