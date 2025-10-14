@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'routes.dart';
+import 'package:provider/provider.dart';
+import 'router.dart';
 import 'theme/app_theme.dart';
+import '../features/auth/providers/auth_provider.dart';
+import '../core/providers/deck_provider.dart';
+import '../core/providers/quiz_provider.dart';
+import '../core/providers/settings_provider.dart';
 
 /// Main application widget with MaterialApp configuration
 class SmartFlashApp extends StatelessWidget {
@@ -9,60 +14,67 @@ class SmartFlashApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      // App metadata
-      title: 'SmartFlash',
-      debugShowCheckedModeBanner: false,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => DeckProvider()),
+        ChangeNotifierProvider(create: (_) => QuizProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp.router(
+            // App metadata
+            title: 'SmartFlash',
+            debugShowCheckedModeBanner: false,
 
-      // Theme configuration
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+            // Theme configuration
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
 
-      // Route configuration
-      initialRoute: AppRoutes.splash,
-      onGenerateRoute: AppRoutes.generateRoute,
+            // Router configuration
+            routerConfig: AppRouter.router,
 
-      // Builder for global configurations
-      builder: (context, child) {
-        // Set system UI overlay style
-        SystemChrome.setSystemUIOverlayStyle(
-          SystemUiOverlayStyle(
-            statusBarColor: Colors.transparent,
-            statusBarIconBrightness:
-                Theme.of(context).brightness == Brightness.dark
-                    ? Brightness.light
-                    : Brightness.dark,
-            statusBarBrightness:
-                Theme.of(context).brightness == Brightness.dark
-                    ? Brightness.dark
-                    : Brightness.light,
-            systemNavigationBarColor: Theme.of(context).colorScheme.surface,
-            systemNavigationBarIconBrightness:
-                Theme.of(context).brightness == Brightness.dark
-                    ? Brightness.light
-                    : Brightness.dark,
-          ),
-        );
+            // Builder for global configurations
+            builder: (context, child) {
+              // Set system UI overlay style
+              SystemChrome.setSystemUIOverlayStyle(
+                SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? Brightness.light
+                          : Brightness.dark,
+                  statusBarBrightness:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? Brightness.dark
+                          : Brightness.light,
+                  systemNavigationBarColor:
+                      Theme.of(context).colorScheme.surface,
+                  systemNavigationBarIconBrightness:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? Brightness.light
+                          : Brightness.dark,
+                ),
+              );
 
-        return MediaQuery(
-          // Ensure text scaling doesn't break the layout
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(
-              MediaQuery.of(context).textScaler.scale(1.0).clamp(0.8, 1.2),
-            ),
-          ),
-          child: child!,
-        );
-      },
-
-      // Error handling
-      onUnknownRoute: (settings) {
-        return MaterialPageRoute(
-          builder: (_) => const NotFoundScreen(),
-          settings: settings,
-        );
-      },
+              return MediaQuery(
+                // Ensure text scaling doesn't break the layout
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(
+                    MediaQuery.of(
+                      context,
+                    ).textScaler.scale(1.0).clamp(0.8, 1.2),
+                  ),
+                ),
+                child: child!,
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
