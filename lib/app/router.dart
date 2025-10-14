@@ -6,7 +6,9 @@ import 'screens/splash_screen.dart';
 import '../features/auth/views/auth_screen.dart';
 import '../features/home/views/home_screen.dart';
 import '../features/auth/views/profile_screen.dart';
+import '../features/course/views/course_details_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/course_screens.dart';
 import 'screens/other_screens.dart';
 
 /// App router configuration using GoRouter
@@ -69,6 +71,30 @@ class AppRouter {
         path: '/profile',
         name: 'profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+
+      GoRoute(
+        path: '/course-details/:courseId',
+        name: 'courseDetails',
+        builder: (context, state) {
+          final courseId = state.pathParameters['courseId']!;
+          return CourseDetailsScreen(courseId: courseId);
+        },
+      ),
+
+      GoRoute(
+        path: '/create-course',
+        name: 'createCourse',
+        builder: (context, state) => const CreateCourseScreen(),
+      ),
+
+      GoRoute(
+        path: '/edit-course/:courseId',
+        name: 'editCourse',
+        builder: (context, state) {
+          final courseId = state.pathParameters['courseId']!;
+          return EditCourseScreen(courseId: courseId);
+        },
       ),
 
       GoRoute(
@@ -210,9 +236,28 @@ class AppNavigation {
     push(context, '/settings');
   }
 
+  /// Navigate to course details
+  static void goCourseDetails(BuildContext context, String courseId) {
+    push(context, '/course-details/$courseId');
+  }
+
+  /// Navigate to create course
+  static void goCreateCourse(BuildContext context) {
+    push(context, '/create-course');
+  }
+
+  /// Navigate to edit course
+  static void goEditCourse(BuildContext context, String courseId) {
+    push(context, '/edit-course/$courseId');
+  }
+
   /// Navigate to create deck
-  static void goCreateDeck(BuildContext context) {
-    push(context, '/create-deck');
+  static void goCreateDeck(BuildContext context, {String? courseId}) {
+    if (courseId != null) {
+      push(context, '/create-deck?courseId=$courseId');
+    } else {
+      push(context, '/create-deck');
+    }
   }
 
   /// Navigate to edit deck

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../../core/providers/deck_provider.dart';
+import '../../../core/providers/course_provider.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_name.dart';
 import '../../../app/app_text_styles.dart';
 import '../../../app/widgets/app_logo.dart';
+import '../../../app/widgets/course_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -15,15 +16,15 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       body: SafeArea(
-        child: Consumer2<AuthProvider, DeckProvider>(
-          builder: (context, authProvider, deckProvider, child) {
+        child: Consumer2<AuthProvider, CourseProvider>(
+          builder: (context, authProvider, courseProvider, child) {
             return Stack(
               children: [
                 // Main content behind
                 Column(
                   children: [
                     _buildHeader(context),
-                    Expanded(child: _buildMainContent(context, deckProvider)),
+                    Expanded(child: _buildMainContent(context, courseProvider)),
                   ],
                 ),
                 // Floating create button overlay
@@ -103,22 +104,25 @@ class HomeScreen extends StatelessWidget {
   }
 
   /// Builds the main content area
-  Widget _buildMainContent(BuildContext context, DeckProvider deckProvider) {
-    if (deckProvider.isLoading) {
+  Widget _buildMainContent(
+    BuildContext context,
+    CourseProvider courseProvider,
+  ) {
+    if (courseProvider.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (deckProvider.error != null) {
-      return _buildErrorState(context, deckProvider);
+    if (courseProvider.error != null) {
+      return _buildErrorState(context, courseProvider);
     }
 
-    return deckProvider.decks.isEmpty
+    return courseProvider.courses.isEmpty
         ? _buildEmptyState(context)
-        : _buildDecksList(context, deckProvider);
+        : _buildCoursesList(context, courseProvider);
   }
 
   /// Builds the error state
-  Widget _buildErrorState(BuildContext context, DeckProvider deckProvider) {
+  Widget _buildErrorState(BuildContext context, CourseProvider courseProvider) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -129,14 +133,14 @@ class HomeScreen extends StatelessWidget {
           Icon(Icons.error_outline, size: 64, color: colorScheme.error),
           const SizedBox(height: 16),
           Text(
-            'Error loading decks',
+            'Error loading courses',
             style: AppTextStyles.headlineSmall.copyWith(
               color: colorScheme.onBackground,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            deckProvider.error!,
+            courseProvider.error!,
             textAlign: TextAlign.center,
             style: AppTextStyles.bodyMedium.copyWith(
               color: colorScheme.onBackground.withOpacity(0.7),
@@ -144,7 +148,7 @@ class HomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => deckProvider.refreshDecks(),
+            onPressed: () => courseProvider.refreshCourses(),
             child: const Text('Retry'),
           ),
         ],
@@ -178,7 +182,7 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: 12),
           // Sub text
           Text(
-            'Create your first notebook below.',
+            'Create your first course below.',
             style: AppTextStyles.bodyLarge.copyWith(
               color: colorScheme.onBackground.withOpacity(0.87),
             ),
@@ -188,108 +192,40 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDecksList(BuildContext context, DeckProvider deckProvider) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
+  Widget _buildCoursesList(
+    BuildContext context,
+    CourseProvider courseProvider,
+  ) {
     return RefreshIndicator(
-      onRefresh: () => deckProvider.refreshDecks(),
+      onRefresh: () => courseProvider.refreshCourses(),
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        itemCount: deckProvider.decks.length,
+        itemCount: courseProvider.courses.length,
         itemBuilder: (context, index) {
-          final deck = deckProvider.decks[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              leading: CircleAvatar(
-                backgroundColor: colorScheme.primary.withOpacity(0.1),
-                child: Icon(Icons.library_books, color: colorScheme.primary),
-              ),
-              title: Text(
-                deck.title,
-                style: AppTextStyles.cardTitle.copyWith(
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              subtitle: Text(
-                deck.description,
-                style: AppTextStyles.cardSubtitle.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              trailing: PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'study':
-                      AppNavigation.goStudySession(context, deck.id);
-                      break;
-                    case 'edit':
-                      AppNavigation.goEditDeck(context, deck.id);
-                      break;
-                    case 'delete':
-                      _showDeleteDialog(context, deckProvider, deck);
-                      break;
-                  }
-                },
-                itemBuilder:
-                    (context) => [
-                      const PopupMenuItem(
-                        value: 'study',
-                        child: Row(
-                          children: [
-                            Icon(Icons.play_arrow),
-                            SizedBox(width: 8),
-                            Text('Study'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit),
-                            SizedBox(width: 8),
-                            Text('Edit'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete),
-                            SizedBox(width: 8),
-                            Text('Delete'),
-                          ],
-                        ),
-                      ),
-                    ],
-              ),
-              onTap: () => AppNavigation.goDeckDetails(context, deck.id),
-            ),
+          final course = courseProvider.courses[index];
+          return CourseCard(
+            course: course,
+            onTap: () => AppNavigation.goCourseDetails(context, course.id),
+            onEdit: () => AppNavigation.goEditCourse(context, course.id),
+            onDelete:
+                () => _showDeleteCourseDialog(context, courseProvider, course),
           );
         },
       ),
     );
   }
 
-  void _showDeleteDialog(
+  void _showDeleteCourseDialog(
     BuildContext context,
-    DeckProvider deckProvider,
-    deck,
+    CourseProvider courseProvider,
+    course,
   ) {
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Delete Deck'),
-            content: Text('Are you sure you want to delete "${deck.title}"?'),
+            title: const Text('Delete Course'),
+            content: Text('Are you sure you want to delete "${course.name}"?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
@@ -298,7 +234,7 @@ class HomeScreen extends StatelessWidget {
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  deckProvider.deleteDeck(deck.id);
+                  courseProvider.deleteCourse(course.id);
                 },
                 child: const Text('Delete'),
               ),
@@ -437,7 +373,7 @@ class _CreateBottomSheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Choose how you\'d like to create your notebook',
+              'Choose how you\'d like to create your course',
               style: AppTextStyles.bodyMedium.copyWith(
                 color: colorScheme.onSurface.withOpacity(0.7),
               ),
@@ -447,9 +383,31 @@ class _CreateBottomSheet extends StatelessWidget {
             // Options
             _buildOption(
               context,
+              icon: Icons.folder,
+              title: 'Create Course',
+              subtitle: 'Create a new course to organize your content',
+              onTap: () {
+                Navigator.pop(context);
+                AppNavigation.goCreateCourse(context);
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildOption(
+              context,
               icon: Icons.upload_file,
-              title: 'Upload PDFs',
-              subtitle: 'Upload documents to get started',
+              title: 'Upload Materials',
+              subtitle: 'Upload documents and files to a course',
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Navigate to upload materials
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildOption(
+              context,
+              icon: Icons.library_books,
+              title: 'Create Deck',
+              subtitle: 'Create flashcards for studying',
               onTap: () {
                 Navigator.pop(context);
                 AppNavigation.goCreateDeck(context);
@@ -458,34 +416,12 @@ class _CreateBottomSheet extends StatelessWidget {
             const SizedBox(height: 16),
             _buildOption(
               context,
-              icon: Icons.text_fields,
-              title: 'Start from scratch',
-              subtitle: 'Create a blank notebook',
+              icon: Icons.quiz,
+              title: 'Create Quiz',
+              subtitle: 'Create quizzes to test knowledge',
               onTap: () {
                 Navigator.pop(context);
-                AppNavigation.goCreateDeck(context);
-              },
-            ),
-            const SizedBox(height: 16),
-            _buildOption(
-              context,
-              icon: Icons.link,
-              title: 'Import from URL',
-              subtitle: 'Add content from web pages',
-              onTap: () {
-                Navigator.pop(context);
-                AppNavigation.goCreateDeck(context);
-              },
-            ),
-            const SizedBox(height: 16),
-            _buildOption(
-              context,
-              icon: Icons.folder_open,
-              title: 'Import from Google Drive',
-              subtitle: 'Connect your Google Drive',
-              onTap: () {
-                Navigator.pop(context);
-                AppNavigation.goCreateDeck(context);
+                // TODO: Navigate to create quiz
               },
             ),
             const SizedBox(height: 24),

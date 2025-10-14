@@ -6,12 +6,14 @@ class DeckModel {
   final String title;
   final String description;
   final String category;
+  final String? courseId;
 
   DeckModel({
     required this.id,
     required this.title,
     required this.description,
     required this.category,
+    this.courseId,
   });
 }
 
@@ -44,97 +46,114 @@ class DeckProvider extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      // Mock data for now (15 sample decks)
+      // Sample decks organized by courses
       _decks = [
+        // Computer Science 101 decks
         DeckModel(
-          id: '1',
-          title: 'Biology Basics',
-          description: 'Cells, DNA, and the fundamentals of life',
-          category: 'Science',
+          id: 'cs101_deck1',
+          title: 'Programming Basics',
+          description: 'Variables, functions, and control structures',
+          category: 'Technology',
+          courseId: 'cs101',
         ),
         DeckModel(
-          id: '2',
-          title: 'Chemistry Essentials',
-          description: 'Atoms, bonding, periodic table trends',
-          category: 'Science',
+          id: 'cs101_deck2',
+          title: 'Data Structures',
+          description: 'Arrays, lists, stacks, and queues',
+          category: 'Technology',
+          courseId: 'cs101',
         ),
         DeckModel(
-          id: '3',
-          title: 'World History 101',
-          description: 'Ancient to modern key events and figures',
+          id: 'cs101_deck3',
+          title: 'Algorithms',
+          description: 'Sorting, searching, and algorithm complexity',
+          category: 'Technology',
+          courseId: 'cs101',
+        ),
+
+        // Biology Advanced decks
+        DeckModel(
+          id: 'bio_adv_deck1',
+          title: 'Cell Biology',
+          description: 'Cell structure, organelles, and functions',
+          category: 'Science',
+          courseId: 'bio_adv',
+        ),
+        DeckModel(
+          id: 'bio_adv_deck2',
+          title: 'Genetics',
+          description: 'DNA, RNA, genes, and inheritance',
+          category: 'Science',
+          courseId: 'bio_adv',
+        ),
+
+        // World History decks
+        DeckModel(
+          id: 'hist_deck1',
+          title: 'Ancient Civilizations',
+          description: 'Egypt, Greece, Rome, and early empires',
           category: 'History',
+          courseId: 'world_history',
         ),
         DeckModel(
-          id: '4',
-          title: 'US Capitals',
-          description: 'States and their capital cities',
-          category: 'Geography',
+          id: 'hist_deck2',
+          title: 'Medieval Period',
+          description: 'Middle Ages, feudalism, and crusades',
+          category: 'History',
+          courseId: 'world_history',
         ),
         DeckModel(
-          id: '5',
-          title: 'Algebra I',
+          id: 'hist_deck3',
+          title: 'Modern Era',
+          description: 'Renaissance, revolutions, and world wars',
+          category: 'History',
+          courseId: 'world_history',
+        ),
+
+        // Mathematics decks
+        DeckModel(
+          id: 'math_deck1',
+          title: 'Algebra',
           description: 'Linear equations, functions, and inequalities',
-          category: 'Math',
+          category: 'Mathematics',
+          courseId: 'math_course',
         ),
         DeckModel(
-          id: '6',
+          id: 'math_deck2',
           title: 'Geometry',
           description: 'Angles, triangles, and circle theorems',
-          category: 'Math',
+          category: 'Mathematics',
+          courseId: 'math_course',
         ),
         DeckModel(
-          id: '7',
-          title: 'Physics Foundations',
-          description: 'Motion, forces, energy, and waves',
-          category: 'Science',
+          id: 'math_deck3',
+          title: 'Calculus',
+          description: 'Derivatives, integrals, and limits',
+          category: 'Mathematics',
+          courseId: 'math_course',
         ),
         DeckModel(
-          id: '8',
-          title: 'Programming in Dart',
-          description: 'Syntax, types, collections, and async',
-          category: 'Technology',
+          id: 'math_deck4',
+          title: 'Statistics',
+          description: 'Probability, distributions, and data analysis',
+          category: 'Mathematics',
+          courseId: 'math_course',
         ),
+
+        // Spanish Language decks
         DeckModel(
-          id: '9',
-          title: 'Flutter Widgets',
-          description: 'Common widgets and layout patterns',
-          category: 'Technology',
-        ),
-        DeckModel(
-          id: '10',
-          title: 'Spanish Vocabulary A1',
-          description: 'Everyday words and phrases for beginners',
+          id: 'spanish_deck1',
+          title: 'Vocabulary A1',
+          description: 'Basic Spanish words and phrases',
           category: 'Language',
+          courseId: 'spanish_lang',
         ),
         DeckModel(
-          id: '11',
-          title: 'French Useful Phrases',
-          description: 'Greetings, travel, dining expressions',
+          id: 'spanish_deck2',
+          title: 'Common Phrases',
+          description: 'Greetings, travel, and daily expressions',
           category: 'Language',
-        ),
-        DeckModel(
-          id: '12',
-          title: 'Anatomy: Human Body',
-          description: 'Major systems and organ functions',
-          category: 'Medicine',
-        ),
-        DeckModel(
-          id: '13',
-          title: 'Literary Devices',
-          description: 'Metaphor, irony, alliteration, and more',
-          category: 'Literature',
-        ),
-        DeckModel(
-          id: '14',
-          title: 'Intro to Psychology',
-          description: 'Key theories, experiments, and terms',
-          category: 'Social Science',
-        ),
-        DeckModel(
-          id: '15',
-          title: 'Astronomy Highlights',
-          description: 'Stars, planets, galaxies, and cosmology',
-          category: 'Science',
+          courseId: 'spanish_lang',
         ),
       ];
       notifyListeners();
@@ -241,6 +260,20 @@ class DeckProvider extends ChangeNotifier {
   /// Get decks by category
   List<DeckModel> getDecksByCategory(String category) {
     return _decks.where((deck) => deck.category == category).toList();
+  }
+
+  /// Get decks by course ID
+  List<DeckModel> getDecksByCourseId(String courseId) {
+    return _decks.where((deck) => deck.courseId == courseId).toList();
+  }
+
+  /// Load decks with optional course ID filter
+  Future<void> loadDecks({String? courseId}) async {
+    await _loadDecks();
+    if (courseId != null) {
+      _decks = getDecksByCourseId(courseId);
+      notifyListeners();
+    }
   }
 
   /// Set loading state

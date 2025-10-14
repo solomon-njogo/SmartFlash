@@ -42,13 +42,14 @@ class DeckModelAdapter extends TypeAdapter<DeckModel> {
       isAIGenerated: fields[22] as bool,
       sourceFileUrl: fields[23] as String?,
       metadata: (fields[24] as Map?)?.cast<String, dynamic>(),
+      courseId: fields[25] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, DeckModel obj) {
     writer
-      ..writeByte(25)
+      ..writeByte(26)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -98,7 +99,9 @@ class DeckModelAdapter extends TypeAdapter<DeckModel> {
       ..writeByte(23)
       ..write(obj.sourceFileUrl)
       ..writeByte(24)
-      ..write(obj.metadata);
+      ..write(obj.metadata)
+      ..writeByte(25)
+      ..write(obj.courseId);
   }
 
   @override
@@ -244,6 +247,7 @@ DeckModel _$DeckModelFromJson(Map<String, dynamic> json) => DeckModel(
       isAIGenerated: json['isAIGenerated'] as bool? ?? false,
       sourceFileUrl: json['sourceFileUrl'] as String?,
       metadata: json['metadata'] as Map<String, dynamic>?,
+      courseId: json['courseId'] as String?,
     );
 
 Map<String, dynamic> _$DeckModelToJson(DeckModel instance) => <String, dynamic>{
@@ -272,6 +276,7 @@ Map<String, dynamic> _$DeckModelToJson(DeckModel instance) => <String, dynamic>{
       'isAIGenerated': instance.isAIGenerated,
       'sourceFileUrl': instance.sourceFileUrl,
       'metadata': instance.metadata,
+      'courseId': instance.courseId,
     };
 
 const _$DeckVisibilityEnumMap = {
