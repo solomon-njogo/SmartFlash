@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../features/auth/providers/auth_provider.dart';
 import 'screens/splash_screen.dart';
 import '../features/auth/views/auth_screen.dart';
 import 'screens/home_screen.dart';
@@ -21,8 +19,10 @@ class AppRouter {
       Supabase.instance.client.auth.onAuthStateChange,
     ),
     redirect: (context, state) {
-      final authProvider = context.read<AuthProvider>();
-      final isAuthenticated = authProvider.isAuthenticated;
+      // Avoid relying on Provider here because the redirect context may not have access
+      // to ancestor providers depending on GoRouter's internal context.
+      final isAuthenticated =
+          Supabase.instance.client.auth.currentSession?.user != null;
       final isAuthRoute = state.matchedLocation.startsWith('/auth');
       final isSplashRoute = state.matchedLocation == '/';
 
@@ -31,18 +31,13 @@ class AppRouter {
         return '/auth';
       }
 
-      // If user is not authenticated and on splash route, redirect to auth
-      if (!isAuthenticated && isSplashRoute) {
-        return '/auth';
+      // If on splash, decide based on current auth state
+      if (isSplashRoute) {
+        return isAuthenticated ? '/home' : '/auth';
       }
 
       // If user is authenticated and on auth route, redirect to home
       if (isAuthenticated && isAuthRoute) {
-        return '/home';
-      }
-
-      // If user is authenticated and on splash route, redirect to home
-      if (isAuthenticated && isSplashRoute) {
         return '/home';
       }
 

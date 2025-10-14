@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_name.dart';
-import '../../../app/app_colors.dart';
+// Removed direct AppColors usage in favor of Theme colorScheme
 import '../../../app/app_text_styles.dart';
 import '../../../app/widgets/app_logo.dart';
 
@@ -18,8 +18,11 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
@@ -75,8 +78,8 @@ class _AuthScreenState extends State<AuthScreen> {
         Text(
           'Your smart learning companion',
           textAlign: TextAlign.center,
-          style: AppTextStyles.bodyLarge.copyWith(
-            color: AppColors.textSecondary,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -152,20 +155,23 @@ class _AuthScreenState extends State<AuthScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
+          color: Theme.of(context).colorScheme.surfaceVariant,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.borderLight, width: 1),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 1,
+          ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 32, color: AppColors.primary),
+            Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 8),
             Text(
               title,
               textAlign: TextAlign.center,
               style: AppTextStyles.labelMedium.copyWith(
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -177,13 +183,15 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget _buildGetStartedButton() {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
+        final theme = Theme.of(context);
+        final colorScheme = theme.colorScheme;
         return SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             onPressed: authProvider.isLoading ? null : _handleGoogleAuth,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textOnPrimary,
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -192,13 +200,13 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
             child:
                 authProvider.isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.textOnPrimary,
+                          colorScheme.onPrimary,
                         ),
                       ),
                     )
