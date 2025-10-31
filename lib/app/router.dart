@@ -9,7 +9,9 @@ import '../features/auth/views/profile_screen.dart';
 import '../features/course/views/course_details_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/course_screens.dart';
+import '../features/course/views/create_course_screen.dart' as feature_course;
 import 'screens/other_screens.dart';
+import '../features/materials/views/upload_materials_screen.dart';
 
 /// App router configuration using GoRouter
 class AppRouter {
@@ -85,7 +87,7 @@ class AppRouter {
       GoRoute(
         path: '/create-course',
         name: 'createCourse',
-        builder: (context, state) => const CreateCourseScreen(),
+        builder: (context, state) => const feature_course.CreateCourseScreen(),
       ),
 
       GoRoute(
@@ -155,6 +157,15 @@ class AppRouter {
         path: '/statistics',
         name: 'statistics',
         builder: (context, state) => const StatisticsScreen(),
+      ),
+      GoRoute(
+        path: '/upload-materials',
+        name: 'uploadMaterials',
+        builder: (context, state) {
+          final queryCourseId = state.uri.queryParameters['courseId'];
+          final extraCourseId = state.extra is String ? state.extra as String? : null;
+          return UploadMaterialsScreen(preselectedCourseId: queryCourseId ?? extraCourseId);
+        },
       ),
     ],
     errorBuilder: (context, state) => const NotFoundScreen(),
@@ -291,6 +302,15 @@ class AppNavigation {
   /// Navigate to statistics
   static void goStatistics(BuildContext context) {
     push(context, '/statistics');
+  }
+
+  /// Navigate to upload materials
+  static void goUploadMaterials(BuildContext context, {String? courseId}) {
+    if (courseId != null) {
+      push(context, '/upload-materials?courseId=$courseId');
+    } else {
+      push(context, '/upload-materials');
+    }
   }
 }
 

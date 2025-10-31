@@ -8,6 +8,7 @@ import '../../../core/providers/quiz_provider.dart';
 import '../../../app/app_text_styles.dart';
 import '../../../data/models/course_material_model.dart';
 import '../../../app/widgets/course_material_card.dart';
+import '../../../app/router.dart';
 
 /// Course details screen with tabs for Decks, Quizzes, and Materials
 class CourseDetailsScreen extends StatefulWidget {
@@ -638,7 +639,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             'This course doesn\'t have any materials yet.',
             'Upload Material',
             () {
-              // TODO: Navigate to upload material
+              AppNavigation.goUploadMaterials(context, courseId: widget.courseId);
             },
           );
         }

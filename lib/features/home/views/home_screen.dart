@@ -399,7 +399,7 @@ class _CreateBottomSheet extends StatelessWidget {
               subtitle: 'Upload documents and files to a course',
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Navigate to upload materials
+                AppNavigation.goUploadMaterials(context);
               },
             ),
             const SizedBox(height: 16),
