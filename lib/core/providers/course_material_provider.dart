@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../data/models/course_material_model.dart';
+import '../../data/remote/material_remote.dart';
 
 /// Course material provider for managing course materials
 class CourseMaterialProvider extends ChangeNotifier {
@@ -264,8 +265,19 @@ class CourseMaterialProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
+      // Upload to storage and insert DB row via Supabase
+      final remote = MaterialRemoteDataSource();
+      final inserted = await remote.uploadAndInsertMaterial(material);
 
-      _materials.add(material);
+      // Build the final model with remote URL, clear local path
+      final saved = material.copyWith(
+        fileUrl: (inserted['file_url'] as String?),
+        filePath: null,
+        uploadedBy: inserted['uploaded_by'] as String?,
+        updatedAt: DateTime.tryParse(inserted['updated_at'] as String? ?? '') ?? material.updatedAt,
+      );
+
+      _materials.add(saved);
       notifyListeners();
       return true;
     } catch (e) {
