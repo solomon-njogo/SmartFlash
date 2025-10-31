@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 import '../../data/models/course_model.dart';
+import '../../data/remote/course_remote.dart';
+import '../../core/utils/logger.dart';
 
 /// Course provider for managing course-related state
 class CourseProvider extends ChangeNotifier {
+  final CourseRemoteDataSource _remote = CourseRemoteDataSource();
   List<CourseModel> _courses = [];
   bool _isLoading = false;
   String? _error;
@@ -159,11 +162,17 @@ class CourseProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
+      Logger.logUserAction('CreateCourse:start', data: {'id': course.id, 'name': course.name});
+      // Persist remotely first (RLS uses auth user as created_by)
+      await _remote.insertCourse(course);
 
+      // On success, update local state
       _courses.add(course);
       notifyListeners();
+      Logger.logUserAction('CreateCourse:success', data: {'id': course.id});
       return true;
-    } catch (e) {
+    } catch (e, st) {
+      Logger.logException(e, st, context: 'CourseProvider.createCourse');
       _setError(e.toString());
       return false;
     } finally {

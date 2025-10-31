@@ -5,6 +5,7 @@ import '../../../app/app_text_styles.dart';
 import '../../../app/router.dart';
 import '../../../core/providers/course_provider.dart';
 import '../../../data/models/course_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CreateCourseScreen extends StatefulWidget {
   const CreateCourseScreen({super.key});
@@ -40,6 +41,8 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
     final now = DateTime.now();
     final String newId = 'course_${now.millisecondsSinceEpoch}';
 
+    final currentUserId =
+        Supabase.instance.client.auth.currentUser?.id ?? 'unknown';
     final newCourse = CourseModel(
       id: newId,
       name: _nameController.text.trim(),
@@ -47,7 +50,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
           _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim(),
-      createdBy: 'user1',
+      createdBy: currentUserId,
       createdAt: now,
       updatedAt: now,
     );
