@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'fsrs_card_state_model.dart';
 
 part 'flashcard_model.g.dart';
 
@@ -98,6 +99,10 @@ class FlashcardModel extends HiveObject {
   @HiveField(21)
   final double averageResponseTime; // in seconds
 
+  // FSRS algorithm state (optional)
+  @HiveField(22)
+  final FSRSCardState? fsrsState;
+
   FlashcardModel({
     required this.id,
     required this.deckId,
@@ -121,6 +126,7 @@ class FlashcardModel extends HiveObject {
     this.consecutiveCorrectAnswers = 0,
     this.totalReviews = 0,
     this.averageResponseTime = 0.0,
+    this.fsrsState,
   });
 
   /// Create FlashcardModel from JSON
@@ -154,6 +160,7 @@ class FlashcardModel extends HiveObject {
     int? consecutiveCorrectAnswers,
     int? totalReviews,
     double? averageResponseTime,
+    FSRSCardState? fsrsState,
   }) {
     return FlashcardModel(
       id: id ?? this.id,
@@ -179,6 +186,7 @@ class FlashcardModel extends HiveObject {
           consecutiveCorrectAnswers ?? this.consecutiveCorrectAnswers,
       totalReviews: totalReviews ?? this.totalReviews,
       averageResponseTime: averageResponseTime ?? this.averageResponseTime,
+      fsrsState: fsrsState ?? this.fsrsState,
     );
   }
 

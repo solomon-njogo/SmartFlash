@@ -50,6 +50,7 @@ dependencies:
   # State management and routing
   provider: ^6.1.2
   go_router: ^14.6.2
+  fsrs: any
 
 dev_dependencies:
   flutter_test:

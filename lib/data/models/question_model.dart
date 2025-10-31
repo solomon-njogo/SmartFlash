@@ -1,6 +1,7 @@
 import 'package:hive/hive.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'flashcard_model.dart';
+import 'fsrs_card_state_model.dart';
 
 part 'question_model.g.dart';
 
@@ -80,6 +81,10 @@ class QuestionModel extends HiveObject {
   @HiveField(18)
   final DifficultyLevel difficulty;
 
+  // FSRS algorithm state (optional)
+  @HiveField(19)
+  final FSRSCardState? fsrsState;
+
   QuestionModel({
     required this.id,
     required this.quizId,
@@ -100,6 +105,7 @@ class QuestionModel extends HiveObject {
     this.metadata,
     this.tags,
     this.difficulty = DifficultyLevel.medium,
+    this.fsrsState,
   });
 
   /// Create QuestionModel from JSON
@@ -130,6 +136,7 @@ class QuestionModel extends HiveObject {
     Map<String, dynamic>? metadata,
     List<String>? tags,
     DifficultyLevel? difficulty,
+    FSRSCardState? fsrsState,
   }) {
     return QuestionModel(
       id: id ?? this.id,
@@ -151,6 +158,7 @@ class QuestionModel extends HiveObject {
       metadata: metadata ?? this.metadata,
       tags: tags ?? this.tags,
       difficulty: difficulty ?? this.difficulty,
+      fsrsState: fsrsState ?? this.fsrsState,
     );
   }
 

@@ -20,12 +20,16 @@ class AppConstants {
   static const String progressBoxName = 'progress_box';
   static const String quizBoxName = 'quiz_box';
   static const String quizResultBoxName = 'quiz_result_box';
+  static const String reviewLogBoxName = 'review_log_box';
 
   // Spaced Repetition Configuration
   static const int initialInterval = 1; // days
   static const double initialEaseFactor = 2.5;
   static const int maxInterval = 365; // days
   static const int minInterval = 1; // days
+  // FSRS learning steps (used while in learning state)
+  static const Duration fsrsLearningStep1 = Duration(minutes: 1);
+  static const Duration fsrsLearningStep2 = Duration(minutes: 10);
 
   // Study Session Configuration
   static const int defaultCardsPerSession = 20;

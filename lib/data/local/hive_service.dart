@@ -7,6 +7,7 @@ import '../models/deck_model.dart';
 import '../models/question_model.dart';
 import '../models/quiz_model.dart';
 import '../models/quiz_result_model.dart';
+import '../models/review_log_model.dart';
 import 'adapters/user_adapter.dart' as user_adapters;
 import 'adapters/flashcard_adapter.dart' as flashcard_adapters;
 import 'adapters/deck_adapter.dart' as deck_adapters;
@@ -14,6 +15,7 @@ import 'adapters/question_adapter.dart' as question_adapters;
 import 'adapters/quiz_adapter.dart' as quiz_adapters;
 import 'adapters/quiz_result_adapter.dart' as quiz_result_adapters;
 import 'adapters/quiz_enum_adapters.dart' as quiz_enum_adapters;
+import 'adapters/review_log_adapter.dart' as review_log_adapters;
 
 /// Service for managing Hive local database operations
 class HiveService {
@@ -73,6 +75,9 @@ class HiveService {
       Hive.registerAdapter(quiz_enum_adapters.QuizResultStatusAdapter());
       Hive.registerAdapter(quiz_enum_adapters.QuestionResultAdapter());
 
+      // Register review log adapter
+      Hive.registerAdapter(review_log_adapters.ReviewLogModelAdapter());
+
       Logger.info('Hive adapters registered successfully');
     } catch (e) {
       Logger.error('Failed to register Hive adapters: $e');
@@ -91,6 +96,7 @@ class HiveService {
         Hive.openBox<QuestionModel>('question_box'),
         Hive.openBox<QuizModel>(AppConstants.quizBoxName),
         Hive.openBox<QuizResultModel>(AppConstants.quizResultBoxName),
+        Hive.openBox<ReviewLogModel>(AppConstants.reviewLogBoxName),
         Hive.openBox(AppConstants.progressBoxName),
       ]);
 
@@ -138,6 +144,10 @@ class HiveService {
   Box<QuizResultModel> get quizResultBox =>
       getBox<QuizResultModel>(AppConstants.quizResultBoxName);
 
+  /// Get review log box
+  Box<ReviewLogModel> get reviewLogBox =>
+      getBox<ReviewLogModel>(AppConstants.reviewLogBoxName);
+
   /// Clear all data from all boxes
   Future<void> clearAllData() async {
     if (!_isInitialized) {
@@ -155,6 +165,7 @@ class HiveService {
         questionBox.clear(),
         quizBox.clear(),
         quizResultBox.clear(),
+        reviewLogBox.clear(),
         progressBox.clear(),
       ]);
 
@@ -182,6 +193,7 @@ class HiveService {
         questionBox.close(),
         quizBox.close(),
         quizResultBox.close(),
+        reviewLogBox.close(),
         progressBox.close(),
       ]);
 
@@ -219,6 +231,10 @@ class HiveService {
         'quizResultBox': {
           'length': quizResultBox.length,
           'keys': quizResultBox.keys.length,
+        },
+        'reviewLogBox': {
+          'length': reviewLogBox.length,
+          'keys': reviewLogBox.keys.length,
         },
       };
     } catch (e) {
