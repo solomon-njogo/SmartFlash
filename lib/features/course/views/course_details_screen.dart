@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/models/course_model.dart';
+import '../../../data/models/quiz_model.dart';
 import '../../../core/providers/course_provider.dart';
 import '../../../core/providers/deck_provider.dart';
 import '../../../core/providers/course_material_provider.dart';
@@ -271,11 +272,16 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                                     '${_course!.totalDecks}',
                                     'Decks',
                                   ),
-                                  _buildStatChip(
-                                    context,
-                                    Icons.quiz,
-                                    '${_course!.totalQuizzes}',
-                                    'Quizzes',
+                                  Consumer<QuizProvider>(
+                                    builder: (context, quizProvider, child) {
+                                      final quizCount = quizProvider.getQuizCountByCourseId(_course!.id);
+                                      return _buildStatChip(
+                                        context,
+                                        Icons.quiz,
+                                        '$quizCount',
+                                        'Quizzes',
+                                      );
+                                    },
                                   ),
                                   _buildStatChip(
                                     context,
@@ -508,126 +514,134 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   Widget _buildQuizzesTab(BuildContext context) {
     return Consumer<QuizProvider>(
       builder: (context, quizProvider, child) {
-        final courseQuizzes = quizProvider.getQuizzesByCourseId(
-          widget.courseId,
-        );
+        // Use FutureBuilder to handle async fallback
+        return FutureBuilder<List<QuizModel>>(
+          future: quizProvider.getQuizzesByCourseIdAsync(widget.courseId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-        if (courseQuizzes.isEmpty) {
-          return _buildEmptyState(
-            context,
-            Icons.quiz,
-            'No Quizzes',
-            'This course doesn\'t have any quizzes yet.',
-            'Create Quiz',
-            () {
-              AppNavigation.goAIGeneration(context);
-            },
-          );
-        }
+            final courseQuizzes = snapshot.data ?? [];
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: courseQuizzes.length,
-          itemBuilder: (context, index) {
-            final quiz = courseQuizzes[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                leading: CircleAvatar(
-                  backgroundColor: _course!.color.withOpacity(0.1),
-                  child: Icon(Icons.quiz, color: _course!.color),
-                ),
-                title: Text(
-                  quiz.name,
-                  style: AppTextStyles.cardTitle.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
+            if (courseQuizzes.isEmpty) {
+              return _buildEmptyState(
+                context,
+                Icons.quiz,
+                'No Quizzes',
+                'This course doesn\'t have any quizzes yet.',
+                'Create Quiz',
+                () {
+                  AppNavigation.goAIGeneration(context);
+                },
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: courseQuizzes.length,
+              itemBuilder: (context, index) {
+                final quiz = courseQuizzes[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (quiz.description != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        quiz.description!,
-                        style: AppTextStyles.cardSubtitle.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    leading: CircleAvatar(
+                      backgroundColor: _course!.color.withOpacity(0.1),
+                      child: Icon(Icons.quiz, color: _course!.color),
+                    ),
+                    title: Text(
+                      quiz.name,
+                      style: AppTextStyles.cardTitle.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
-                    ],
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildQuizInfoChip(
-                          context,
-                          Icons.question_answer,
-                          '${quiz.questionIds.length} Questions',
+                        if (quiz.description != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            quiz.description!,
+                            style: AppTextStyles.cardSubtitle.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            _buildQuizInfoChip(
+                              context,
+                              Icons.question_answer,
+                              '${quiz.questionIds.length} Questions',
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'start':
-                        quizProvider.startQuiz(quiz.id);
-                        // TODO: Navigate to quiz screen
-                        break;
-                      case 'edit':
-                        // TODO: Navigate to edit quiz
-                        break;
-                      case 'delete':
-                        _showDeleteQuizDialog(context, quizProvider, quiz);
-                        break;
-                    }
-                  },
-                  itemBuilder:
-                      (context) => [
-                        const PopupMenuItem(
-                          value: 'start',
-                          child: Row(
-                            children: [
-                              Icon(Icons.play_arrow),
-                              SizedBox(width: 8),
-                              Text('Start Quiz'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit),
-                              SizedBox(width: 8),
-                              Text('Edit'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete),
-                              SizedBox(width: 8),
-                              Text('Delete'),
-                            ],
-                          ),
-                        ),
-                      ],
-                ),
-                onTap: () {
-                  quizProvider.startQuiz(quiz.id);
-                  // TODO: Navigate to quiz screen
-                },
-              ),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'start':
+                            quizProvider.startQuiz(quiz.id);
+                            // TODO: Navigate to quiz screen
+                            break;
+                          case 'edit':
+                            // TODO: Navigate to edit quiz
+                            break;
+                          case 'delete':
+                            _showDeleteQuizDialog(context, quizProvider, quiz);
+                            break;
+                        }
+                      },
+                      itemBuilder:
+                          (context) => [
+                            const PopupMenuItem(
+                              value: 'start',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.play_arrow),
+                                  SizedBox(width: 8),
+                                  Text('Start Quiz'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit),
+                                  SizedBox(width: 8),
+                                  Text('Edit'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete),
+                                  SizedBox(width: 8),
+                                  Text('Delete'),
+                                ],
+                              ),
+                            ),
+                          ],
+                    ),
+                    onTap: () {
+                      quizProvider.startQuiz(quiz.id);
+                      // TODO: Navigate to quiz screen
+                    },
+                  ),
+                );
+              },
             );
           },
         );

@@ -414,6 +414,75 @@ class SupabaseService {
     }
   }
 
+  /// Get user's quizzes
+  Future<List<QuizModel>> getUserQuizzes(String userId) async {
+    try {
+      Logger.info('Getting quizzes for user: $userId');
+
+      final response = await client
+          .from('quizzes')
+          .select()
+          .eq('created_by', userId)
+          .order('updated_at', ascending: false);
+
+      Logger.info('User quizzes retrieved successfully');
+      return response
+          .map<QuizModel>((json) => QuizModel.fromDatabaseJson(json))
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get user quizzes: $e');
+      rethrow;
+    }
+  }
+
+  /// Get quizzes for a course
+  /// Queries quizzes directly by course_id
+  Future<List<QuizModel>> getCourseQuizzes(String courseId) async {
+    try {
+      Logger.info('Getting quizzes for course: $courseId');
+
+      if (!isAuthenticated) {
+        Logger.warning('User not authenticated, returning empty list');
+        return [];
+      }
+
+      final response = await client
+          .from('quizzes')
+          .select()
+          .eq('course_id', courseId)
+          .order('created_at', ascending: false);
+
+      Logger.info('Course quizzes retrieved successfully');
+      return response
+          .map<QuizModel>((json) => QuizModel.fromDatabaseJson(json))
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get course quizzes: $e');
+      rethrow;
+    }
+  }
+
+  /// Get questions for a quiz
+  Future<List<QuestionModel>> getQuizQuestions(String quizId) async {
+    try {
+      Logger.info('Getting questions for quiz: $quizId');
+
+      final response = await client
+          .from('questions')
+          .select()
+          .eq('quiz_id', quizId)
+          .order('order', ascending: true);
+
+      Logger.info('Quiz questions retrieved successfully');
+      return response
+          .map<QuestionModel>((json) => QuestionModel.fromDatabaseJson(json))
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get quiz questions: $e');
+      rethrow;
+    }
+  }
+
   /// Sync local data with remote
   Future<void> syncData() async {
     try {

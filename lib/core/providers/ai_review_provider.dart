@@ -207,16 +207,9 @@ class AIReviewProvider extends ChangeNotifier {
   }
 
   /// Accept and save quiz
-  Future<bool> acceptQuiz({
-    required String deckId,
-    required String deckName,
-    String? createdBy,
-  }) async {
+  Future<bool> acceptQuiz({String? createdBy}) async {
     try {
-      Logger.info(
-        'Starting acceptQuiz with deckId: $deckId, deckName: $deckName',
-        tag: 'AIReviewProvider',
-      );
+      Logger.info('Starting acceptQuiz', tag: 'AIReviewProvider');
       _status = ReviewStatus.saving;
       _error = null;
       notifyListeners();
@@ -275,14 +268,6 @@ class AIReviewProvider extends ChangeNotifier {
         return false;
       }
 
-      // Ensure deck exists
-      final deck = await _getOrCreateDeck(
-        deckId: deckId,
-        deckName: deckName,
-        createdBy: createdBy,
-        description: 'AI-generated quiz deck',
-      );
-
       // Create quiz with selected questions
       final quizId = _uuid.v4(); // Generate proper UUID
       final quizData = quizPreview.toQuizModels(
@@ -303,8 +288,6 @@ class AIReviewProvider extends ChangeNotifier {
           }).toList();
 
       final quiz = quizData.quiz.copyWith(
-        deckId:
-            deck.id, // Use the actual deck ID (either found or newly created)
         questionIds: filteredQuestions.map((q) => q.id).toList(),
       );
 

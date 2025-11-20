@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/course_model.dart';
 import '../../app/app_text_styles.dart';
 import '../../core/providers/course_material_provider.dart';
+import '../../core/providers/quiz_provider.dart';
 
 /// Course card widget for displaying courses on home screen
 class CourseCard extends StatelessWidget {
@@ -131,12 +132,17 @@ class CourseCard extends StatelessWidget {
                     colorScheme,
                   ),
                   const SizedBox(width: 16),
-                  _buildStatItem(
-                    context,
-                    Icons.quiz,
-                    '${course.totalQuizzes}',
-                    'Quizzes',
-                    colorScheme,
+                  Consumer<QuizProvider>(
+                    builder: (context, quizProvider, child) {
+                      final quizCount = quizProvider.getQuizCountByCourseId(course.id);
+                      return _buildStatItem(
+                        context,
+                        Icons.quiz,
+                        '$quizCount',
+                        'Quizzes',
+                        colorScheme,
+                      );
+                    },
                   ),
                   const SizedBox(width: 16),
                   Consumer<CourseMaterialProvider>(

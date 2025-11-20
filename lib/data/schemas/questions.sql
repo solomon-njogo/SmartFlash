@@ -29,9 +29,9 @@ CREATE POLICY "Users can view questions in their quizzes"
     USING (
         EXISTS (
             SELECT 1 FROM quizzes
-            JOIN decks ON decks.id = quizzes.deck_id
+            JOIN courses ON courses.id = quizzes.course_id
             WHERE quizzes.id = questions.quiz_id
-            AND decks.created_by = auth.uid()
+            AND courses.created_by = auth.uid()
         )
     );
 
@@ -40,9 +40,9 @@ CREATE POLICY "Users can create questions in their quizzes"
     WITH CHECK (
         EXISTS (
             SELECT 1 FROM quizzes
-            JOIN decks ON decks.id = quizzes.deck_id
+            JOIN courses ON courses.id = quizzes.course_id
             WHERE quizzes.id = questions.quiz_id
-            AND decks.created_by = auth.uid()
+            AND courses.created_by = auth.uid()
             AND quizzes.created_by = auth.uid()
         )
     );
@@ -52,9 +52,9 @@ CREATE POLICY "Users can update questions in their quizzes"
     USING (
         EXISTS (
             SELECT 1 FROM quizzes
-            JOIN decks ON decks.id = quizzes.deck_id
+            JOIN courses ON courses.id = quizzes.course_id
             WHERE quizzes.id = questions.quiz_id
-            AND decks.created_by = auth.uid()
+            AND courses.created_by = auth.uid()
             AND quizzes.created_by = auth.uid()
         )
     );
@@ -64,9 +64,9 @@ CREATE POLICY "Users can delete questions in their quizzes"
     USING (
         EXISTS (
             SELECT 1 FROM quizzes
-            JOIN decks ON decks.id = quizzes.deck_id
+            JOIN courses ON courses.id = quizzes.course_id
             WHERE quizzes.id = questions.quiz_id
-            AND decks.created_by = auth.uid()
+            AND courses.created_by = auth.uid()
             AND quizzes.created_by = auth.uid()
         )
     );

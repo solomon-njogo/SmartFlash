@@ -17,10 +17,11 @@ class AIQuizGenerator {
   /// Generate quiz from document text
   Future<QuizPreview> generateQuiz({
     required DocumentTextModel documentText,
-    required String deckId,
     required int questionCount,
     required String difficulty,
     required List<String> questionTypes,
+    required String courseId,
+    List<String> materialIds = const [],
     Function(double)? onProgress,
   }) async {
     try {
@@ -73,7 +74,12 @@ class AIQuizGenerator {
           }
 
           // Parse JSON response with robust error handling
-          quiz = _parseQuizResponse(fullResponse, deckId, questionCount);
+          quiz = _parseQuizResponse(
+            fullResponse,
+            questionCount,
+            courseId,
+            materialIds,
+          );
           break; // Success, exit retry loop
         } catch (parseError) {
           lastParseException =
@@ -132,11 +138,12 @@ class AIQuizGenerator {
   /// Regenerate quiz with user feedback
   Future<QuizPreview> regenerateQuiz({
     required DocumentTextModel documentText,
-    required String deckId,
     required int questionCount,
     required String difficulty,
     required List<String> questionTypes,
     required String userFeedback,
+    required String courseId,
+    List<String> materialIds = const [],
     Function(double)? onProgress,
   }) async {
     try {
@@ -184,7 +191,12 @@ class AIQuizGenerator {
           }
 
           // Parse JSON response with robust error handling
-          quiz = _parseQuizResponse(fullResponse, deckId, questionCount);
+          quiz = _parseQuizResponse(
+            fullResponse,
+            questionCount,
+            courseId,
+            materialIds,
+          );
           break; // Success, exit retry loop
         } catch (parseError) {
           lastParseException =
@@ -237,8 +249,9 @@ class AIQuizGenerator {
 
   QuizPreview _parseQuizResponse(
     String response,
-    String deckId,
     int expectedQuestionCount,
+    String courseId,
+    List<String> materialIds,
   ) {
     try {
       // Extract and clean JSON from response with multiple strategies
@@ -405,13 +418,14 @@ class AIQuizGenerator {
               : DifficultyLevel.medium;
 
       return QuizPreview(
-        deckId: deckId,
         name: quizName,
         description: quizDescription,
         questions: questions,
         difficulty: _parseDifficultyInt(firstQuestionDifficulty.name),
         createdAt: now,
         updatedAt: now,
+        courseId: courseId,
+        materialIds: materialIds,
       );
     } catch (e, st) {
       Logger.error(
@@ -641,22 +655,24 @@ class AIQuizGenerator {
 
 /// Preview model for quiz before saving
 class QuizPreview {
-  final String deckId;
   final String name;
   final String? description;
   final List<QuestionPreview> questions;
   final int difficulty;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String courseId;
+  final List<String> materialIds;
 
   QuizPreview({
-    required this.deckId,
     required this.name,
     this.description,
     required this.questions,
     required this.difficulty,
     required this.createdAt,
     required this.updatedAt,
+    required this.courseId,
+    this.materialIds = const [],
   });
 
   /// Convert to QuizModel and QuestionModel list
@@ -668,12 +684,13 @@ class QuizPreview {
       id: quizId,
       name: name,
       description: description,
-      deckId: deckId,
       questionIds: questions.map((q) => q.id).toList(),
       createdBy: createdBy,
       createdAt: createdAt,
       updatedAt: updatedAt,
       isAIGenerated: true,
+      courseId: courseId,
+      materialIds: materialIds,
     );
 
     final questionModels =

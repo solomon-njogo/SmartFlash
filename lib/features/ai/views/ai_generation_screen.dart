@@ -312,7 +312,6 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                   );
                 } else {
                   provider.generateQuiz(
-                    deckId: 'deck_${DateTime.now().millisecondsSinceEpoch}',
                     questionCount: 10, // Fixed to 10
                     difficulty: _difficulty,
                     questionTypes: ['multipleChoice'], // Only MCQs

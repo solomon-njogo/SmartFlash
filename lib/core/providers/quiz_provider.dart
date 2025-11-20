@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../data/models/quiz_model.dart';
-import 'course_provider.dart';
+import '../../data/remote/supabase_client.dart';
+import '../utils/logger.dart';
 
 /// Quiz provider for managing quiz and study session state
 class QuizProvider extends ChangeNotifier {
@@ -43,9 +44,31 @@ class QuizProvider extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      // To do
+      final supabaseService = SupabaseService.instance;
+
+      // Check if user is authenticated
+      if (!supabaseService.isAuthenticated) {
+        Logger.info('User not authenticated, skipping quiz load');
+        _quizzes = [];
+        notifyListeners();
+        return;
+      }
+
+      final userId = supabaseService.currentUserId;
+      if (userId == null) {
+        Logger.warning('User ID is null, skipping quiz load');
+        _quizzes = [];
+        notifyListeners();
+        return;
+      }
+
+      // Fetch quizzes from database
+      _quizzes = await supabaseService.getUserQuizzes(userId);
+
+      Logger.info('Loaded ${_quizzes.length} quizzes from database');
       notifyListeners();
     } catch (e) {
+      Logger.error('Failed to load quizzes: $e');
       _setError(e.toString());
     } finally {
       _setLoading(false);
@@ -53,15 +76,57 @@ class QuizProvider extends ChangeNotifier {
   }
 
   /// Get quizzes by course ID
+  /// Filters quizzes directly by courseId
   List<QuizModel> getQuizzesByCourseId(String courseId) {
-    return _quizzes.where((quiz) {
-      // Check if quiz belongs to any deck in the course
-      final courseProvider = CourseProvider();
-      final course = courseProvider.getCourseById(courseId);
-      if (course == null) return false;
+    try {
+      final matchingQuizzes =
+          _quizzes.where((quiz) => quiz.courseId == courseId).toList();
 
-      return course.quizIds.contains(quiz.id);
-    }).toList();
+      Logger.info(
+        'Found ${matchingQuizzes.length} quizzes for course $courseId',
+      );
+
+      return matchingQuizzes;
+    } catch (e) {
+      Logger.error('Failed to get quizzes by course ID: $e');
+      return [];
+    }
+  }
+
+  /// Get quizzes by course ID (async version that queries database if needed)
+  Future<List<QuizModel>> getQuizzesByCourseIdAsync(String courseId) async {
+    try {
+      // First try local cache
+      final cached = getQuizzesByCourseId(courseId);
+      if (cached.isNotEmpty) {
+        return cached;
+      }
+
+      // Fallback: query database directly
+      Logger.info(
+        'No local quizzes found, querying database for course quizzes: $courseId',
+      );
+      final supabaseService = SupabaseService.instance;
+      if (!supabaseService.isAuthenticated) return [];
+
+      final quizzes = await supabaseService.getCourseQuizzes(courseId);
+
+      // Update local cache with results
+      if (quizzes.isNotEmpty) {
+        _quizzes.addAll(quizzes);
+        notifyListeners();
+      }
+
+      return quizzes;
+    } catch (e) {
+      Logger.error('Failed to get quizzes by course ID (async): $e');
+      return [];
+    }
+  }
+
+  /// Get quiz count for a course
+  int getQuizCountByCourseId(String courseId) {
+    return getQuizzesByCourseId(courseId).length;
   }
 
   /// Get quiz by ID

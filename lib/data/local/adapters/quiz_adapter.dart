@@ -12,23 +12,27 @@ class QuizModelAdapter extends TypeAdapter<QuizModel> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+    // Handle migration: skip old deckId field (3) if present
     return QuizModel(
       id: fields[0] as String,
       name: fields[1] as String,
       description: fields[2] as String?,
-      deckId: fields[3] as String,
-      questionIds: (fields[4] as List?)?.cast<String>() ?? const [],
-      createdBy: fields[5] as String,
-      createdAt: fields[6] as DateTime,
-      updatedAt: fields[7] as DateTime,
-      isAIGenerated: fields[8] as bool? ?? false,
+      questionIds: (fields[4] as List?)?.cast<String>() ?? 
+                   (fields[3] as List?)?.cast<String>() ?? const [],
+      createdBy: fields[5] as String? ?? fields[4] as String? ?? '',
+      createdAt: fields[6] as DateTime? ?? fields[5] as DateTime? ?? DateTime.now(),
+      updatedAt: fields[7] as DateTime? ?? fields[6] as DateTime? ?? DateTime.now(),
+      isAIGenerated: fields[8] as bool? ?? fields[7] as bool? ?? false,
+      courseId: fields[9] as String? ?? fields[8] as String? ?? '',
+      materialIds: (fields[10] as List?)?.cast<String>() ?? 
+                   (fields[9] as List?)?.cast<String>() ?? const [],
     );
   }
 
   @override
   void write(BinaryWriter writer, QuizModel obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -36,17 +40,19 @@ class QuizModelAdapter extends TypeAdapter<QuizModel> {
       ..writeByte(2)
       ..write(obj.description)
       ..writeByte(3)
-      ..write(obj.deckId)
-      ..writeByte(4)
       ..write(obj.questionIds)
-      ..writeByte(5)
+      ..writeByte(4)
       ..write(obj.createdBy)
-      ..writeByte(6)
+      ..writeByte(5)
       ..write(obj.createdAt)
-      ..writeByte(7)
+      ..writeByte(6)
       ..write(obj.updatedAt)
+      ..writeByte(7)
+      ..write(obj.isAIGenerated)
       ..writeByte(8)
-      ..write(obj.isAIGenerated);
+      ..write(obj.courseId)
+      ..writeByte(9)
+      ..write(obj.materialIds);
   }
 
   @override

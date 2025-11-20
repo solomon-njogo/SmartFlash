@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS quizzes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    deck_id UUID NOT NULL REFERENCES decks(id) ON DELETE CASCADE,
+    course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    material_ids TEXT[] DEFAULT '{}',
     question_ids UUID[] DEFAULT '{}',
     created_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -14,52 +15,52 @@ CREATE TABLE IF NOT EXISTS quizzes (
 );
 
 -- Indexes for quizzes
-CREATE INDEX IF NOT EXISTS idx_quizzes_deck_id ON quizzes(deck_id);
+CREATE INDEX IF NOT EXISTS idx_quizzes_course_id ON quizzes(course_id);
 CREATE INDEX IF NOT EXISTS idx_quizzes_created_by ON quizzes(created_by);
 
 -- Enable RLS
 ALTER TABLE quizzes ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
-CREATE POLICY "Users can view quizzes in their decks"
+CREATE POLICY "Users can view quizzes in their courses"
     ON quizzes FOR SELECT
     USING (
         EXISTS (
-            SELECT 1 FROM decks
-            WHERE decks.id = quizzes.deck_id
-            AND decks.created_by = auth.uid()
+            SELECT 1 FROM courses
+            WHERE courses.id = quizzes.course_id
+            AND courses.created_by = auth.uid()
         )
     );
 
-CREATE POLICY "Users can create quizzes in their decks"
+CREATE POLICY "Users can create quizzes in their courses"
     ON quizzes FOR INSERT
     WITH CHECK (
         EXISTS (
-            SELECT 1 FROM decks
-            WHERE decks.id = quizzes.deck_id
-            AND decks.created_by = auth.uid()
+            SELECT 1 FROM courses
+            WHERE courses.id = quizzes.course_id
+            AND courses.created_by = auth.uid()
         )
         AND auth.uid() = created_by
     );
 
-CREATE POLICY "Users can update quizzes in their decks"
+CREATE POLICY "Users can update quizzes in their courses"
     ON quizzes FOR UPDATE
     USING (
         EXISTS (
-            SELECT 1 FROM decks
-            WHERE decks.id = quizzes.deck_id
-            AND decks.created_by = auth.uid()
+            SELECT 1 FROM courses
+            WHERE courses.id = quizzes.course_id
+            AND courses.created_by = auth.uid()
         )
         AND auth.uid() = created_by
     );
 
-CREATE POLICY "Users can delete quizzes in their decks"
+CREATE POLICY "Users can delete quizzes in their courses"
     ON quizzes FOR DELETE
     USING (
         EXISTS (
-            SELECT 1 FROM decks
-            WHERE decks.id = quizzes.deck_id
-            AND decks.created_by = auth.uid()
+            SELECT 1 FROM courses
+            WHERE courses.id = quizzes.course_id
+            AND courses.created_by = auth.uid()
         )
         AND auth.uid() = created_by
     );

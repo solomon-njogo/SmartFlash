@@ -17,33 +17,37 @@ class QuizModel extends HiveObject {
   final String? description;
 
   @HiveField(3)
-  final String deckId;
-
-  @HiveField(4)
   final List<String> questionIds;
 
-  @HiveField(5)
+  @HiveField(4)
   final String createdBy;
 
-  @HiveField(6)
+  @HiveField(5)
   final DateTime createdAt;
 
-  @HiveField(7)
+  @HiveField(6)
   final DateTime updatedAt;
 
-  @HiveField(8)
+  @HiveField(7)
   final bool isAIGenerated;
+
+  @HiveField(8)
+  final String courseId;
+
+  @HiveField(9)
+  final List<String> materialIds;
 
   QuizModel({
     required this.id,
     required this.name,
     this.description,
-    required this.deckId,
     this.questionIds = const [],
     required this.createdBy,
     required this.createdAt,
     required this.updatedAt,
     this.isAIGenerated = false,
+    required this.courseId,
+    this.materialIds = const [],
   });
 
   /// Create QuizModel from JSON (camelCase)
@@ -59,7 +63,6 @@ class QuizModel extends HiveObject {
       id: json['id'] as String,
       name: json['name'] as String,
       description: json['description'] as String?,
-      deckId: json['deck_id'] as String,
       questionIds:
           (json['question_ids'] as List<dynamic>?)
               ?.map((e) => e.toString())
@@ -69,6 +72,12 @@ class QuizModel extends HiveObject {
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
       isAIGenerated: json['is_ai_generated'] as bool? ?? false,
+      courseId: json['course_id'] as String,
+      materialIds:
+          (json['material_ids'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
     );
   }
 
@@ -79,12 +88,13 @@ class QuizModel extends HiveObject {
       'id': id,
       'name': name,
       'description': description,
-      'deck_id': deckId,
       'question_ids': questionIds,
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'is_ai_generated': isAIGenerated,
+      'course_id': courseId,
+      'material_ids': materialIds,
     };
   }
 
@@ -93,23 +103,25 @@ class QuizModel extends HiveObject {
     String? id,
     String? name,
     String? description,
-    String? deckId,
     List<String>? questionIds,
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isAIGenerated,
+    String? courseId,
+    List<String>? materialIds,
   }) {
     return QuizModel(
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
-      deckId: deckId ?? this.deckId,
       questionIds: questionIds ?? this.questionIds,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isAIGenerated: isAIGenerated ?? this.isAIGenerated,
+      courseId: courseId ?? this.courseId,
+      materialIds: materialIds ?? this.materialIds,
     );
   }
 
@@ -124,6 +136,6 @@ class QuizModel extends HiveObject {
 
   @override
   String toString() {
-    return 'QuizModel(id: $id, name: $name, questionIds: ${questionIds.length})';
+    return 'QuizModel(id: $id, name: $name, questionIds: ${questionIds.length}, courseId: $courseId, materialIds: ${materialIds.length})';
   }
 }

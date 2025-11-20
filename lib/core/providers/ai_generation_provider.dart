@@ -123,7 +123,6 @@ class AIGenerationProvider extends ChangeNotifier {
 
   /// Generate quiz
   Future<void> generateQuiz({
-    required String deckId,
     required int questionCount,
     required String difficulty,
     required List<String> questionTypes,
@@ -143,10 +142,11 @@ class AIGenerationProvider extends ChangeNotifier {
 
       _generatedQuiz = await _quizGenerator.generateQuiz(
         documentText: _documentText!,
-        deckId: deckId,
         questionCount: questionCount,
         difficulty: difficulty,
         questionTypes: questionTypes,
+        courseId: _selectedMaterial?.courseId ?? '',
+        materialIds: _selectedMaterial != null ? [_selectedMaterial!.id] : [],
         onProgress: (progress) {
           _progress = progress;
           notifyListeners();
@@ -202,7 +202,6 @@ class AIGenerationProvider extends ChangeNotifier {
           },
         );
       } else if (_generationType == GenerationType.quiz && _generatedQuiz != null) {
-        final deckId = _generatedQuiz!.deckId;
         final questionCount = _generatedQuiz!.questions.length;
         final difficulty = _generatedQuiz!.difficulty.toString();
         final questionTypes = _generatedQuiz!.questions
@@ -212,11 +211,12 @@ class AIGenerationProvider extends ChangeNotifier {
 
         _generatedQuiz = await _quizGenerator.regenerateQuiz(
           documentText: _documentText!,
-          deckId: deckId,
           questionCount: questionCount,
           difficulty: difficulty,
           questionTypes: questionTypes,
           userFeedback: feedback,
+          courseId: _generatedQuiz!.courseId,
+          materialIds: _generatedQuiz!.materialIds,
           onProgress: (progress) {
             _progress = progress;
             notifyListeners();

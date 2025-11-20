@@ -425,15 +425,7 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
                           );
                         } else {
                           print('Saving quiz...'); // Debug log
-                          // Use quiz name for deck name, or fallback to default
-                          final quizName = generationProvider.generatedQuiz?.name ?? 'AI Generated Quiz';
-                          final deckName = _deckNameController.text.isNotEmpty
-                              ? _deckNameController.text
-                              : '$quizName - Deck';
-                          print('Deck name: $deckName'); // Debug log
                           success = await reviewProvider.acceptQuiz(
-                            deckId: uuid.v4(), // Generate proper UUID
-                            deckName: deckName,
                             createdBy: userId,
                           );
                           print('Quiz save result: $success'); // Debug log
