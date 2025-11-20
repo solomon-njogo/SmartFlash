@@ -7,6 +7,8 @@ import '../models/flashcard_model.dart';
 import '../models/deck_model.dart';
 import '../models/quiz_model.dart';
 import '../models/question_model.dart';
+import '../models/deck_attempt_model.dart';
+import '../models/deck_attempt_card_result.dart';
 
 /// Service for managing Supabase remote database operations
 class SupabaseService {
@@ -422,6 +424,174 @@ class SupabaseService {
       Logger.info('Flashcard deleted successfully');
     } catch (e) {
       Logger.error('Failed to delete flashcard: $e');
+      rethrow;
+    }
+  }
+
+  /// Create a new deck attempt
+  Future<DeckAttemptModel> createDeckAttempt(DeckAttemptModel attempt) async {
+    try {
+      Logger.info('Creating deck attempt: ${attempt.id}');
+
+      final response =
+          await client
+              .from('deck_attempts')
+              .insert(attempt.toDatabaseJson())
+              .select()
+              .single();
+
+      Logger.info('Deck attempt created successfully');
+      return DeckAttemptModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to create deck attempt: $e');
+      rethrow;
+    }
+  }
+
+  /// Update deck attempt
+  Future<DeckAttemptModel> updateDeckAttempt(DeckAttemptModel attempt) async {
+    try {
+      Logger.info('Updating deck attempt: ${attempt.id}');
+
+      final response =
+          await client
+              .from('deck_attempts')
+              .update(attempt.toDatabaseJson())
+              .eq('id', attempt.id)
+              .select()
+              .single();
+
+      Logger.info('Deck attempt updated successfully');
+      return DeckAttemptModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to update deck attempt: $e');
+      rethrow;
+    }
+  }
+
+  /// Get deck attempts for a user
+  Future<List<DeckAttemptModel>> getUserDeckAttempts(String userId) async {
+    try {
+      Logger.info('Getting deck attempts for user: $userId');
+
+      final response = await client
+          .from('deck_attempts')
+          .select()
+          .eq('user_id', userId)
+          .order('started_at', ascending: false);
+
+      Logger.info('User deck attempts retrieved successfully');
+      return response
+          .map<DeckAttemptModel>(
+            (json) => DeckAttemptModel.fromDatabaseJson(json),
+          )
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get user deck attempts: $e');
+      rethrow;
+    }
+  }
+
+  /// Get deck attempts for a specific deck
+  Future<List<DeckAttemptModel>> getDeckAttempts(String deckId) async {
+    try {
+      Logger.info('Getting deck attempts for deck: $deckId');
+
+      if (!isAuthenticated) {
+        Logger.warning('User not authenticated, returning empty list');
+        return [];
+      }
+
+      final response = await client
+          .from('deck_attempts')
+          .select()
+          .eq('deck_id', deckId)
+          .eq('user_id', currentUserId!)
+          .order('started_at', ascending: false);
+
+      Logger.info('Deck attempts retrieved successfully');
+      return response
+          .map<DeckAttemptModel>(
+            (json) => DeckAttemptModel.fromDatabaseJson(json),
+          )
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get deck attempts: $e');
+      rethrow;
+    }
+  }
+
+  /// Get next attempt number for a user/deck combination
+  Future<int> getNextAttemptNumber(String deckId, String userId) async {
+    try {
+      Logger.info(
+        'Getting next attempt number for deck: $deckId, user: $userId',
+      );
+
+      final response = await client
+          .from('deck_attempts')
+          .select('attempt_number')
+          .eq('deck_id', deckId)
+          .eq('user_id', userId)
+          .order('attempt_number', ascending: false)
+          .limit(1);
+
+      if (response.isEmpty) {
+        return 1;
+      }
+
+      final lastAttemptNumber = response[0]['attempt_number'] as int;
+      return lastAttemptNumber + 1;
+    } catch (e) {
+      Logger.error('Failed to get next attempt number: $e');
+      // Return 1 as default if query fails
+      return 1;
+    }
+  }
+
+  /// Save card result for a deck attempt
+  Future<DeckAttemptCardResult> saveCardResult(
+    DeckAttemptCardResult cardResult,
+  ) async {
+    try {
+      Logger.info('Saving card result: ${cardResult.id}');
+
+      final response =
+          await client
+              .from('deck_attempt_card_results')
+              .insert(cardResult.toDatabaseJson())
+              .select()
+              .single();
+
+      Logger.info('Card result saved successfully');
+      return DeckAttemptCardResult.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to save card result: $e');
+      rethrow;
+    }
+  }
+
+  /// Get card results for a deck attempt
+  Future<List<DeckAttemptCardResult>> getAttemptCardResults(
+    String attemptId,
+  ) async {
+    try {
+      Logger.info('Getting card results for attempt: $attemptId');
+
+      final response = await client
+          .from('deck_attempt_card_results')
+          .select()
+          .eq('attempt_id', attemptId)
+          .order('order', ascending: true);
+
+      Logger.info('Card results retrieved successfully');
+      return response
+          .map<DeckAttemptCardResult>(
+            (json) => DeckAttemptCardResult.fromDatabaseJson(json),
+          )
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get card results: $e');
       rethrow;
     }
   }

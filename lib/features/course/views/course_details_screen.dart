@@ -613,7 +613,10 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                             ],
                       ),
                       onTap: () {
-                        AppNavigation.goDeckDetails(context, deck.id);
+                        AppNavigation.goFlashcardReview(
+                          context,
+                          deckId: deck.id,
+                        );
                       },
                     ),
                   );

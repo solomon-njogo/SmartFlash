@@ -19,6 +19,8 @@ import '../features/deck/views/deck_details_screen.dart';
 import '../features/deck/views/create_deck_screen.dart';
 import '../features/deck/views/flashcard_edit_screen.dart';
 import '../features/deck/views/flashcard_review_screen.dart';
+import '../features/deck/views/deck_attempt_results_screen.dart';
+import '../data/models/deck_attempt_model.dart';
 
 /// App router configuration using GoRouter
 class AppRouter {
@@ -167,6 +169,21 @@ class AppRouter {
             deckId: deckId,
             flashcardId: flashcardId,
           );
+        },
+      ),
+
+      GoRoute(
+        path: '/deck-attempt-results',
+        name: 'deckAttemptResults',
+        builder: (context, state) {
+          final attempt = state.extra as DeckAttemptModel?;
+          if (attempt == null) {
+            // If no attempt provided, navigate back
+            return const Scaffold(
+              body: Center(child: Text('No attempt data provided')),
+            );
+          }
+          return DeckAttemptResultsScreen(attempt: attempt);
         },
       ),
 
