@@ -664,22 +664,16 @@ class QuizPreview {
     required String quizId,
     required String createdBy,
   }) {
-    final now = DateTime.now();
     final quiz = QuizModel(
       id: quizId,
       name: name,
       description: description,
       deckId: deckId,
       questionIds: questions.map((q) => q.id).toList(),
-      status: QuizStatus.draft,
       createdBy: createdBy,
       createdAt: createdAt,
       updatedAt: updatedAt,
-      totalQuestions: questions.length,
-      totalPoints: questions.fold(0, (sum, q) => sum + q.points),
-      difficulty: difficulty,
       isAIGenerated: true,
-      metadata: {'generated_at': now.toIso8601String()},
     );
 
     final questionModels =
@@ -719,7 +713,7 @@ class QuestionPreview {
     required this.order,
     required this.createdAt,
     required this.updatedAt,
-  }) : id = id ?? 'q_${DateTime.now().millisecondsSinceEpoch}_${order}';
+  }) : id = id ?? 'q_${DateTime.now().millisecondsSinceEpoch}_$order';
 
   QuestionModel toQuestionModel({
     required String quizId,
@@ -734,14 +728,11 @@ class QuestionPreview {
       options: options,
       correctAnswers: correctAnswers,
       explanation: explanation,
-      points: points,
-      difficulty: difficulty,
       order: order,
       createdAt: createdAt,
       updatedAt: updatedAt,
       createdBy: createdBy,
       isAIGenerated: true,
-      metadata: {'generated_at': DateTime.now().toIso8601String()},
     );
   }
 }

@@ -1,6 +1,5 @@
 import 'package:hive/hive.dart';
 import '../../models/question_model.dart';
-import '../../models/flashcard_model.dart';
 
 /// Hive adapter for QuestionModel
 class QuestionModelAdapter extends TypeAdapter<QuestionModel> {
@@ -21,25 +20,18 @@ class QuestionModelAdapter extends TypeAdapter<QuestionModel> {
       options: (fields[4] as List?)?.cast<String>() ?? const [],
       correctAnswers: (fields[5] as List?)?.cast<String>() ?? const [],
       explanation: fields[6] as String?,
-      points: fields[7] as int? ?? 1,
-      timeLimit: fields[8] as Duration?,
-      imageUrl: fields[9] as String?,
-      audioUrl: fields[10] as String?,
-      order: fields[11] as int,
-      createdAt: fields[12] as DateTime,
-      updatedAt: fields[13] as DateTime,
-      createdBy: fields[14] as String?,
-      isAIGenerated: fields[15] as bool? ?? false,
-      metadata: fields[16] as Map<String, dynamic>?,
-      tags: (fields[17] as List?)?.cast<String>(),
-      difficulty: fields[18] as DifficultyLevel? ?? DifficultyLevel.medium,
+      order: fields[7] as int,
+      createdAt: fields[8] as DateTime,
+      updatedAt: fields[9] as DateTime,
+      createdBy: fields[10] as String?,
+      isAIGenerated: fields[11] as bool? ?? false,
     );
   }
 
   @override
   void write(BinaryWriter writer, QuestionModel obj) {
     writer
-      ..writeByte(19)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -55,29 +47,15 @@ class QuestionModelAdapter extends TypeAdapter<QuestionModel> {
       ..writeByte(6)
       ..write(obj.explanation)
       ..writeByte(7)
-      ..write(obj.points)
-      ..writeByte(8)
-      ..write(obj.timeLimit)
-      ..writeByte(9)
-      ..write(obj.imageUrl)
-      ..writeByte(10)
-      ..write(obj.audioUrl)
-      ..writeByte(11)
       ..write(obj.order)
-      ..writeByte(12)
+      ..writeByte(8)
       ..write(obj.createdAt)
-      ..writeByte(13)
+      ..writeByte(9)
       ..write(obj.updatedAt)
-      ..writeByte(14)
+      ..writeByte(10)
       ..write(obj.createdBy)
-      ..writeByte(15)
-      ..write(obj.isAIGenerated)
-      ..writeByte(16)
-      ..write(obj.metadata)
-      ..writeByte(17)
-      ..write(obj.tags)
-      ..writeByte(18)
-      ..write(obj.difficulty);
+      ..writeByte(11)
+      ..write(obj.isAIGenerated);
   }
 
   @override

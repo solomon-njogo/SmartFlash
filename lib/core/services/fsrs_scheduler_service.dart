@@ -133,28 +133,10 @@ class FSRSSchedulerService {
   }
 
   /// Review a question with the given rating
+  /// Note: Questions no longer support FSRS state in the database schema
+  /// This method creates a review log but does not update question state
   ReviewResult reviewQuestion(QuestionModel question, Rating rating) {
     final now = DateTime.now();
-
-    // Convert QuestionModel to FSRS Card
-    Card card;
-    if (question.fsrsState != null) {
-      card = question.fsrsState!.toFSRSCard();
-    } else {
-      // Create new card for first review
-      card = Card(
-        cardId: question.id.hashCode,
-        state: State.learning,
-        step: 0,
-        stability: null,
-        difficulty: null,
-        due: now,
-        lastReview: null,
-      );
-    }
-
-    // Schedule the card
-    final scheduledCard = _simulateFSRSSchedule(card, rating, now);
 
     // Create review log
     final reviewLog = ReviewLogModel(
@@ -163,18 +145,15 @@ class FSRSSchedulerService {
       cardType: 'question',
       rating: rating,
       reviewDateTime: now,
-      scheduledDays: 0, // FSRS doesn't expose this directly
-      elapsedDays: 0, // FSRS doesn't expose this directly
-      state: scheduledCard.state,
-      cardState: scheduledCard.state,
+      scheduledDays: 0,
+      elapsedDays: 0,
+      state: State.learning, // Default state since we don't track FSRS for questions
+      cardState: State.learning,
     );
 
-    // Convert back to FSRSCardState
-    final newFsrsState = FSRSCardState.fromFSRSCard(scheduledCard);
-
+    // Update question timestamp only (no FSRS state)
     return ReviewResult(
       updatedQuestion: question.copyWith(
-        fsrsState: newFsrsState,
         updatedAt: now,
       ),
       reviewLog: reviewLog,
@@ -193,9 +172,10 @@ class FSRSSchedulerService {
   }
 
   /// Get next review date for a question
+  /// Note: Questions no longer support FSRS state in the database schema
+  /// Returns null as questions don't track review dates
   DateTime? getQuestionNextReviewDate(QuestionModel question) {
-    if (question.fsrsState == null) return null;
-    return question.fsrsState!.due;
+    return null;
   }
 
   /// Get retrievability for a flashcard
@@ -205,9 +185,10 @@ class FSRSSchedulerService {
   }
 
   /// Get retrievability for a question
+  /// Note: Questions no longer support FSRS state in the database schema
+  /// Returns 0.0 as questions don't track retrievability
   double getQuestionRetrievability(QuestionModel question, DateTime now) {
-    if (question.fsrsState == null) return 0.0;
-    return question.fsrsState!.getRetrievability(now);
+    return 0.0;
   }
 
   /// Get preview of next review dates for all ratings
@@ -240,30 +221,10 @@ class FSRSSchedulerService {
   }
 
   /// Get preview of next review dates for all ratings for a question
+  /// Note: Questions no longer support FSRS state in the database schema
+  /// Returns empty map as questions don't track review dates
   Map<Rating, DateTime> getQuestionReviewDatePreview(QuestionModel question) {
-    final now = DateTime.now();
-    Card card;
-
-    if (question.fsrsState != null) {
-      card = question.fsrsState!.toFSRSCard();
-    } else {
-      card = Card(
-        cardId: question.id.hashCode,
-        state: State.learning,
-        step: 0,
-        stability: null,
-        difficulty: null,
-        due: now,
-        lastReview: null,
-      );
-    }
-
-    return {
-      Rating.again: _simulateFSRSSchedule(card, Rating.again, now).due,
-      Rating.hard: _simulateFSRSSchedule(card, Rating.hard, now).due,
-      Rating.good: _simulateFSRSSchedule(card, Rating.good, now).due,
-      Rating.easy: _simulateFSRSSchedule(card, Rating.easy, now).due,
-    };
+    return {};
   }
 
   /// Get user-friendly rating labels

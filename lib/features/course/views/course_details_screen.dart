@@ -568,40 +568,10 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                         _buildQuizInfoChip(
                           context,
                           Icons.question_answer,
-                          '${quiz.totalQuestions} Questions',
-                        ),
-                        _buildQuizInfoChip(
-                          context,
-                          Icons.timer,
-                          '${quiz.timeLimit?.inMinutes ?? 'No'} min',
-                        ),
-                        _buildQuizInfoChip(
-                          context,
-                          Icons.star,
-                          '${quiz.difficulty}/5',
+                          '${quiz.questionIds.length} Questions',
                         ),
                       ],
                     ),
-                    if (quiz.totalAttempts > 0) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.trending_up,
-                            size: 16,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Avg Score: ${quiz.averageScore.toStringAsFixed(1)}%',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
                   ],
                 ),
                 trailing: PopupMenuButton<String>(

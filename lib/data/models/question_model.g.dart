@@ -24,26 +24,18 @@ class QuestionModelAdapter extends TypeAdapter<QuestionModel> {
       options: (fields[4] as List).cast<String>(),
       correctAnswers: (fields[5] as List).cast<String>(),
       explanation: fields[6] as String?,
-      points: fields[7] as int,
-      timeLimit: fields[8] as Duration?,
-      imageUrl: fields[9] as String?,
-      audioUrl: fields[10] as String?,
-      order: fields[11] as int,
-      createdAt: fields[12] as DateTime,
-      updatedAt: fields[13] as DateTime,
-      createdBy: fields[14] as String?,
-      isAIGenerated: fields[15] as bool,
-      metadata: (fields[16] as Map?)?.cast<String, dynamic>(),
-      tags: (fields[17] as List?)?.cast<String>(),
-      difficulty: fields[18] as DifficultyLevel,
-      fsrsState: fields[19] as FSRSCardState?,
+      order: fields[7] as int,
+      createdAt: fields[8] as DateTime,
+      updatedAt: fields[9] as DateTime,
+      createdBy: fields[10] as String?,
+      isAIGenerated: fields[11] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, QuestionModel obj) {
     writer
-      ..writeByte(20)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -59,31 +51,15 @@ class QuestionModelAdapter extends TypeAdapter<QuestionModel> {
       ..writeByte(6)
       ..write(obj.explanation)
       ..writeByte(7)
-      ..write(obj.points)
-      ..writeByte(8)
-      ..write(obj.timeLimit)
-      ..writeByte(9)
-      ..write(obj.imageUrl)
-      ..writeByte(10)
-      ..write(obj.audioUrl)
-      ..writeByte(11)
       ..write(obj.order)
-      ..writeByte(12)
+      ..writeByte(8)
       ..write(obj.createdAt)
-      ..writeByte(13)
+      ..writeByte(9)
       ..write(obj.updatedAt)
-      ..writeByte(14)
+      ..writeByte(10)
       ..write(obj.createdBy)
-      ..writeByte(15)
-      ..write(obj.isAIGenerated)
-      ..writeByte(16)
-      ..write(obj.metadata)
-      ..writeByte(17)
-      ..write(obj.tags)
-      ..writeByte(18)
-      ..write(obj.difficulty)
-      ..writeByte(19)
-      ..write(obj.fsrsState);
+      ..writeByte(11)
+      ..write(obj.isAIGenerated);
   }
 
   @override
@@ -169,25 +145,11 @@ QuestionModel _$QuestionModelFromJson(Map<String, dynamic> json) =>
           .map((e) => e as String)
           .toList(),
       explanation: json['explanation'] as String?,
-      points: (json['points'] as num?)?.toInt() ?? 1,
-      timeLimit: json['timeLimit'] == null
-          ? null
-          : Duration(microseconds: (json['timeLimit'] as num).toInt()),
-      imageUrl: json['imageUrl'] as String?,
-      audioUrl: json['audioUrl'] as String?,
       order: (json['order'] as num).toInt(),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       createdBy: json['createdBy'] as String?,
       isAIGenerated: json['isAIGenerated'] as bool? ?? false,
-      metadata: json['metadata'] as Map<String, dynamic>?,
-      tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
-      difficulty:
-          $enumDecodeNullable(_$DifficultyLevelEnumMap, json['difficulty']) ??
-              DifficultyLevel.medium,
-      fsrsState: json['fsrsState'] == null
-          ? null
-          : FSRSCardState.fromJson(json['fsrsState'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$QuestionModelToJson(QuestionModel instance) =>
@@ -199,19 +161,11 @@ Map<String, dynamic> _$QuestionModelToJson(QuestionModel instance) =>
       'options': instance.options,
       'correctAnswers': instance.correctAnswers,
       'explanation': instance.explanation,
-      'points': instance.points,
-      'timeLimit': instance.timeLimit?.inMicroseconds,
-      'imageUrl': instance.imageUrl,
-      'audioUrl': instance.audioUrl,
       'order': instance.order,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'createdBy': instance.createdBy,
       'isAIGenerated': instance.isAIGenerated,
-      'metadata': instance.metadata,
-      'tags': instance.tags,
-      'difficulty': _$DifficultyLevelEnumMap[instance.difficulty]!,
-      'fsrsState': instance.fsrsState,
     };
 
 const _$QuestionTypeEnumMap = {
@@ -220,10 +174,4 @@ const _$QuestionTypeEnumMap = {
   QuestionType.fillInTheBlank: 'fillInTheBlank',
   QuestionType.matching: 'matching',
   QuestionType.shortAnswer: 'shortAnswer',
-};
-
-const _$DifficultyLevelEnumMap = {
-  DifficultyLevel.easy: 'easy',
-  DifficultyLevel.medium: 'medium',
-  DifficultyLevel.hard: 'hard',
 };

@@ -385,37 +385,7 @@ class SupabaseService {
 
       Logger.info('Quiz created successfully');
       // Convert snake_case from database to camelCase for model
-      return QuizModel.fromJson({
-        'id': response['id'],
-        'name': response['name'],
-        'description': response['description'],
-        'deckId': response['deck_id'],
-        'questionIds': response['question_ids'] ?? [],
-        'createdBy': response['created_by'],
-        'createdAt': response['created_at'],
-        'updatedAt': response['updated_at'],
-        'isAIGenerated': response['is_ai_generated'] ?? false,
-        // Set defaults for fields not in database
-        'status': 'draft',
-        'totalQuestions': quiz.totalQuestions,
-        'totalPoints': quiz.totalPoints,
-        'isRandomized': quiz.isRandomized,
-        'allowRetake': quiz.allowRetake,
-        'maxAttempts': quiz.maxAttempts,
-        'showCorrectAnswers': quiz.showCorrectAnswers,
-        'showExplanations': quiz.showExplanations,
-        'showScore': quiz.showScore,
-        'tags': quiz.tags,
-        'settings': quiz.settings,
-        'category': quiz.category,
-        'subject': quiz.subject,
-        'difficulty': quiz.difficulty,
-        'metadata': quiz.metadata,
-        'totalAttempts': quiz.totalAttempts,
-        'averageScore': quiz.averageScore,
-        'averageTime': quiz.averageTime.inMicroseconds,
-        'lastTakenAt': quiz.lastTakenAt?.toIso8601String(),
-      });
+      return QuizModel.fromDatabaseJson(response);
     } catch (e) {
       Logger.error('Failed to create quiz: $e');
       rethrow;
@@ -427,15 +397,17 @@ class SupabaseService {
     try {
       Logger.info('Creating question: ${question.id}');
 
+      // Use toDatabaseJson() to only include fields that exist in the database schema
       final response =
           await client
               .from('questions')
-              .insert(question.toJson())
+              .insert(question.toDatabaseJson())
               .select()
               .single();
 
       Logger.info('Question created successfully');
-      return QuestionModel.fromJson(response);
+      // Convert snake_case from database to camelCase for model
+      return QuestionModel.fromDatabaseJson(response);
     } catch (e) {
       Logger.error('Failed to create question: $e');
       rethrow;

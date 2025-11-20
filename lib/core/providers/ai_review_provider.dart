@@ -106,6 +106,37 @@ class AIReviewProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Get or create a deck
+  Future<DeckModel> _getOrCreateDeck({
+    required String deckId,
+    required String deckName,
+    required String? createdBy,
+    required String description,
+  }) async {
+    try {
+      // Try to get existing deck
+      final decks = await _supabaseService.getUserDecks(createdBy ?? '');
+      return decks.firstWhere(
+        (d) => d.id == deckId,
+        orElse: () => throw Exception(),
+      );
+    } catch (e) {
+      // Create new deck if it doesn't exist
+      final now = DateTime.now();
+      final deck = DeckModel(
+        id: _uuid.v4(), // Generate proper UUID
+        name: deckName,
+        description: description,
+        createdBy: createdBy ?? '',
+        createdAt: now,
+        updatedAt: now,
+        isAIGenerated: true,
+      );
+      await _supabaseService.createDeck(deck);
+      return deck;
+    }
+  }
+
   /// Accept and save flashcards
   Future<bool> acceptFlashcards({
     required String deckId,
@@ -136,36 +167,24 @@ class AIReviewProvider extends ChangeNotifier {
               : _selectedFlashcardIndices.map((i) => flashcards[i]).toList();
 
       // Ensure deck exists
-      DeckModel? deck;
-      try {
-        // Try to get existing deck
-        final decks = await _supabaseService.getUserDecks(createdBy ?? '');
-        deck = decks.firstWhere(
-          (d) => d.id == deckId,
-          orElse: () => throw Exception(),
-        );
-      } catch (e) {
-        // Create new deck if it doesn't exist
-        // Generate a proper UUID for the deck
-        final now = DateTime.now();
-        deck = DeckModel(
-          id: _uuid.v4(), // Generate proper UUID
-          name: deckName,
-          description: 'AI-generated flashcards',
-          createdBy: createdBy ?? '',
-          createdAt: now,
-          updatedAt: now,
-          isAIGenerated: true,
-        );
-        await _supabaseService.createDeck(deck);
-      }
+      final deck = await _getOrCreateDeck(
+        deckId: deckId,
+        deckName: deckName,
+        createdBy: createdBy,
+        description: 'AI-generated flashcards',
+      );
 
       // Save flashcards
       for (final preview in flashcardsToSave) {
-        final flashcard = preview.toFlashcardModel(
-          id: _uuid.v4(), // Generate proper UUID
-          createdBy: createdBy,
-        );
+        final flashcard = preview
+            .toFlashcardModel(
+              id: _uuid.v4(), // Generate proper UUID
+              createdBy: createdBy,
+            )
+            .copyWith(
+              deckId:
+                  deck.id, // Use the actual deck ID (either found or newly created)
+            );
         await _supabaseService.createFlashcard(flashcard);
       }
 
@@ -257,29 +276,12 @@ class AIReviewProvider extends ChangeNotifier {
       }
 
       // Ensure deck exists
-      DeckModel? deck;
-      try {
-        // Try to get existing deck
-        final decks = await _supabaseService.getUserDecks(createdBy ?? '');
-        deck = decks.firstWhere(
-          (d) => d.id == deckId,
-          orElse: () => throw Exception(),
-        );
-      } catch (e) {
-        // Create new deck if it doesn't exist
-        // Generate a proper UUID for the deck
-        final now = DateTime.now();
-        deck = DeckModel(
-          id: _uuid.v4(), // Generate proper UUID
-          name: deckName,
-          description: 'AI-generated quiz deck',
-          createdBy: createdBy ?? '',
-          createdAt: now,
-          updatedAt: now,
-          isAIGenerated: true,
-        );
-        await _supabaseService.createDeck(deck);
-      }
+      final deck = await _getOrCreateDeck(
+        deckId: deckId,
+        deckName: deckName,
+        createdBy: createdBy,
+        description: 'AI-generated quiz deck',
+      );
 
       // Create quiz with selected questions
       final quizId = _uuid.v4(); // Generate proper UUID
@@ -300,14 +302,10 @@ class AIReviewProvider extends ChangeNotifier {
             );
           }).toList();
 
-      final totalPoints = filteredQuestions.fold<int>(
-        0,
-        (sum, q) => sum + q.points,
-      );
       final quiz = quizData.quiz.copyWith(
+        deckId:
+            deck.id, // Use the actual deck ID (either found or newly created)
         questionIds: filteredQuestions.map((q) => q.id).toList(),
-        totalQuestions: filteredQuestions.length,
-        totalPoints: totalPoints,
       );
 
       // Save quiz
