@@ -1,6 +1,11 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../data/models/course_material_model.dart';
 import '../../data/remote/material_remote.dart';
+import '../../core/utils/logger.dart';
 
 /// Course material provider for managing course materials
 class CourseMaterialProvider extends ChangeNotifier {
@@ -25,233 +30,124 @@ class CourseMaterialProvider extends ChangeNotifier {
     _loadMaterials();
   }
 
-  /// Load all materials from local storage
+  /// Load all materials from database
   Future<void> _loadMaterials() async {
     try {
       _setLoading(true);
       _clearError();
 
-      // Sample materials for the 5 courses
-      _materials = [
-        // Computer Science 101 materials
-        CourseMaterialModel(
-          id: 'cs101_mat1',
-          courseId: 'cs101',
-          name: 'syllabus.pdf',
-          description: 'Course syllabus and schedule',
-          fileType: FileType.pdf,
-          fileSizeBytes: (1024 * 1024).round(), // 1MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 30)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 30)),
-          tags: ['syllabus', 'schedule'],
-        ),
-        CourseMaterialModel(
-          id: 'cs101_mat2',
-          courseId: 'cs101',
-          name: 'lecture1.pdf',
-          description: 'Introduction to Programming',
-          fileType: FileType.pdf,
-          fileSizeBytes: (2 * 1024 * 1024).round(), // 2MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 28)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 28)),
-          tags: ['lecture', 'programming'],
-        ),
-        CourseMaterialModel(
-          id: 'cs101_mat3',
-          courseId: 'cs101',
-          name: 'cheatsheet.png',
-          description: 'Programming syntax reference',
-          fileType: FileType.image,
-          fileSizeBytes: (512 * 1024).round(), // 512KB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 25)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 25)),
-          tags: ['reference', 'syntax'],
-        ),
-        CourseMaterialModel(
-          id: 'cs101_mat4',
-          courseId: 'cs101',
-          name: 'assignment1.docx',
-          description: 'First programming assignment',
-          fileType: FileType.docx,
-          fileSizeBytes: (256 * 1024).round(), // 256KB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 20)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 20)),
-          tags: ['assignment', 'homework'],
-        ),
-
-        // Biology Advanced materials
-        CourseMaterialModel(
-          id: 'bio_adv_mat1',
-          courseId: 'bio_adv',
-          name: 'textbook_ch1.pdf',
-          description: 'Cell Biology Chapter 1',
-          fileType: FileType.pdf,
-          fileSizeBytes: (5 * 1024 * 1024).round(), // 5MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 25)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 25)),
-          tags: ['textbook', 'cell-biology'],
-        ),
-        CourseMaterialModel(
-          id: 'bio_adv_mat2',
-          courseId: 'bio_adv',
-          name: 'lab_notes.pdf',
-          description: 'Laboratory experiment notes',
-          fileType: FileType.pdf,
-          fileSizeBytes: (1.5 * 1024 * 1024).round(), // 1.5MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 22)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 22)),
-          tags: ['lab', 'experiment'],
-        ),
-        CourseMaterialModel(
-          id: 'bio_adv_mat3',
-          courseId: 'bio_adv',
-          name: 'diagram.jpg',
-          description: 'Cell structure diagram',
-          fileType: FileType.image,
-          fileSizeBytes: (800 * 1024).round(), // 800KB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 20)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 20)),
-          tags: ['diagram', 'cell-structure'],
-        ),
-
-        // World History materials
-        CourseMaterialModel(
-          id: 'hist_mat1',
-          courseId: 'world_history',
-          name: 'timeline.pdf',
-          description: 'World history timeline',
-          fileType: FileType.pdf,
-          fileSizeBytes: (3 * 1024 * 1024).round(), // 3MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 20)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 20)),
-          tags: ['timeline', 'chronology'],
-        ),
-        CourseMaterialModel(
-          id: 'hist_mat2',
-          courseId: 'world_history',
-          name: 'map.png',
-          description: 'Historical world map',
-          fileType: FileType.image,
-          fileSizeBytes: (1.2 * 1024 * 1024).round(), // 1.2MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 18)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 18)),
-          tags: ['map', 'geography'],
-        ),
-
-        // Mathematics materials
-        CourseMaterialModel(
-          id: 'math_mat1',
-          courseId: 'math_course',
-          name: 'formula_sheet.pdf',
-          description: 'Mathematical formulas reference',
-          fileType: FileType.pdf,
-          fileSizeBytes: (2.5 * 1024 * 1024).round(), // 2.5MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 15)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 15)),
-          tags: ['formulas', 'reference'],
-        ),
-        CourseMaterialModel(
-          id: 'math_mat2',
-          courseId: 'math_course',
-          name: 'practice_problems.pdf',
-          description: 'Algebra practice problems',
-          fileType: FileType.pdf,
-          fileSizeBytes: (1.8 * 1024 * 1024).round(), // 1.8MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 12)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 12)),
-          tags: ['practice', 'algebra'],
-        ),
-        CourseMaterialModel(
-          id: 'math_mat3',
-          courseId: 'math_course',
-          name: 'geometry_theorems.pdf',
-          description: 'Geometry theorems and proofs',
-          fileType: FileType.pdf,
-          fileSizeBytes: (2.2 * 1024 * 1024).round(), // 2.2MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 10)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 10)),
-          tags: ['geometry', 'theorems'],
-        ),
-        CourseMaterialModel(
-          id: 'math_mat4',
-          courseId: 'math_course',
-          name: 'calculus_notes.pdf',
-          description: 'Calculus lecture notes',
-          fileType: FileType.pdf,
-          fileSizeBytes: (3.5 * 1024 * 1024).round(), // 3.5MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 8)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 8)),
-          tags: ['calculus', 'notes'],
-        ),
-        CourseMaterialModel(
-          id: 'math_mat5',
-          courseId: 'math_course',
-          name: 'statistics_examples.pdf',
-          description: 'Statistics examples and solutions',
-          fileType: FileType.pdf,
-          fileSizeBytes: (1.9 * 1024 * 1024).round(), // 1.9MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 5)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 5)),
-          tags: ['statistics', 'examples'],
-        ),
-
-        // Spanish Language materials
-        CourseMaterialModel(
-          id: 'spanish_mat1',
-          courseId: 'spanish_lang',
-          name: 'grammar_guide.pdf',
-          description: 'Spanish grammar reference guide',
-          fileType: FileType.pdf,
-          fileSizeBytes: (2.8 * 1024 * 1024).round(), // 2.8MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 10)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 10)),
-          tags: ['grammar', 'reference'],
-        ),
-        CourseMaterialModel(
-          id: 'spanish_mat2',
-          courseId: 'spanish_lang',
-          name: 'pronunciation.mp3',
-          description: 'Spanish pronunciation guide',
-          fileType: FileType.audio,
-          fileSizeBytes: (5 * 1024 * 1024).round(), // 5MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 8)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 8)),
-          tags: ['pronunciation', 'audio'],
-        ),
-        CourseMaterialModel(
-          id: 'spanish_mat3',
-          courseId: 'spanish_lang',
-          name: 'exercises.pdf',
-          description: 'Spanish vocabulary exercises',
-          fileType: FileType.pdf,
-          fileSizeBytes: (1.5 * 1024 * 1024).round(), // 1.5MB
-          uploadedBy: 'user1',
-          uploadedAt: DateTime.now().subtract(const Duration(days: 6)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 6)),
-          tags: ['exercises', 'vocabulary'],
-        ),
-      ];
+      // Try to load all materials from database
+      try {
+        final remote = MaterialRemoteDataSource();
+        // Load all materials for all courses to support real-time counts
+        final response = await remote.fetchAllMaterials();
+        _materials =
+            response.map((row) {
+              return CourseMaterialModel(
+                id: row['id'] as String,
+                courseId: row['course_id'] as String,
+                name: row['name'] as String,
+                description: row['description'] as String?,
+                fileType: _parseFileType(row['file_type'] as String),
+                fileSizeBytes: row['file_size_bytes'] as int,
+                fileUrl: row['file_url'] as String?,
+                uploadedBy: row['uploaded_by'] as String,
+                uploadedAt: DateTime.parse(row['uploaded_at'] as String),
+                updatedAt: DateTime.parse(row['updated_at'] as String),
+                tags: (row['tags'] as List<dynamic>?)?.cast<String>() ?? [],
+                thumbnailUrl: row['thumbnail_url'] as String?,
+                metadata: row['metadata'] as Map<String, dynamic>?,
+                downloadCount: row['download_count'] as int? ?? 0,
+                lastAccessedAt:
+                    row['last_accessed_at'] != null
+                        ? DateTime.parse(row['last_accessed_at'] as String)
+                        : null,
+              );
+            }).toList();
+      } catch (e) {
+        // If database fetch fails, start with empty list
+        _materials = [];
+        Logger.warning(
+          'Failed to load materials from database: $e',
+          tag: 'Materials',
+        );
+      }
       notifyListeners();
     } catch (e) {
       _setError(e.toString());
     } finally {
       _setLoading(false);
+    }
+  }
+
+  /// Load materials for a specific course
+  Future<void> loadMaterialsForCourse(String courseId) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final remote = MaterialRemoteDataSource();
+      final materialsData = await remote.fetchMaterialsByCourseId(courseId);
+
+      // Convert database rows to CourseMaterialModel
+      final courseMaterials =
+          materialsData.map((row) {
+            return CourseMaterialModel(
+              id: row['id'] as String,
+              courseId: row['course_id'] as String,
+              name: row['name'] as String,
+              description: row['description'] as String?,
+              fileType: _parseFileType(row['file_type'] as String),
+              fileSizeBytes: row['file_size_bytes'] as int,
+              fileUrl: row['file_url'] as String?,
+              uploadedBy: row['uploaded_by'] as String,
+              uploadedAt: DateTime.parse(row['uploaded_at'] as String),
+              updatedAt: DateTime.parse(row['updated_at'] as String),
+              tags: (row['tags'] as List<dynamic>?)?.cast<String>() ?? [],
+              thumbnailUrl: row['thumbnail_url'] as String?,
+              metadata: row['metadata'] as Map<String, dynamic>?,
+              downloadCount: row['download_count'] as int? ?? 0,
+              lastAccessedAt:
+                  row['last_accessed_at'] != null
+                      ? DateTime.parse(row['last_accessed_at'] as String)
+                      : null,
+            );
+          }).toList();
+
+      // Update materials list: remove old materials for this course and add new ones
+      _materials.removeWhere((m) => m.courseId == courseId);
+      _materials.addAll(courseMaterials);
+
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  FileType _parseFileType(String type) {
+    switch (type.toLowerCase()) {
+      case 'pdf':
+        return FileType.pdf;
+      case 'doc':
+        return FileType.doc;
+      case 'docx':
+        return FileType.docx;
+      case 'ppt':
+        return FileType.ppt;
+      case 'pptx':
+        return FileType.pptx;
+      case 'image':
+        return FileType.image;
+      case 'audio':
+        return FileType.audio;
+      case 'video':
+        return FileType.video;
+      case 'text':
+        return FileType.text;
+      default:
+        return FileType.other;
     }
   }
 
@@ -261,23 +157,39 @@ class CourseMaterialProvider extends ChangeNotifier {
   }
 
   /// Create a new material
-  Future<bool> createMaterial(CourseMaterialModel material) async {
+  Future<bool> createMaterial(
+    CourseMaterialModel material, {
+    Uint8List? fileBytes,
+    Function(double)? onProgress,
+  }) async {
     try {
       _setLoading(true);
       _clearError();
       // Upload to storage and insert DB row via Supabase
       final remote = MaterialRemoteDataSource();
-      final inserted = await remote.uploadAndInsertMaterial(material);
+      final inserted = await remote.uploadAndInsertMaterial(
+        material,
+        fileBytes: fileBytes,
+        onProgress: onProgress,
+      );
 
       // Build the final model with remote URL, clear local path
       final saved = material.copyWith(
         fileUrl: (inserted['file_url'] as String?),
         filePath: null,
-        uploadedBy: inserted['uploaded_by'] as String?,
-        updatedAt: DateTime.tryParse(inserted['updated_at'] as String? ?? '') ?? material.updatedAt,
+        uploadedBy: inserted['uploaded_by'] as String? ?? material.uploadedBy,
+        updatedAt:
+            DateTime.tryParse(inserted['updated_at'] as String? ?? '') ??
+            material.updatedAt,
       );
 
-      _materials.add(saved);
+      // Check if material already exists (update) or add new
+      final existingIndex = _materials.indexWhere((m) => m.id == saved.id);
+      if (existingIndex != -1) {
+        _materials[existingIndex] = saved;
+      } else {
+        _materials.add(saved);
+      }
       notifyListeners();
       return true;
     } catch (e) {
@@ -314,12 +226,74 @@ class CourseMaterialProvider extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      _materials.removeWhere((material) => material.id == materialId);
+      final material = getMaterialById(materialId);
+      if (material == null) {
+        _setError('Material not found');
+        return false;
+      }
+
+      // Delete from remote (storage and database)
+      final remote = MaterialRemoteDataSource();
+      await remote.deleteMaterial(materialId, material.fileUrl);
+
+      // Remove from local list
+      _materials.removeWhere((m) => m.id == materialId);
       notifyListeners();
       return true;
     } catch (e) {
       _setError(e.toString());
       return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Download a material to local storage
+  Future<String?> downloadMaterial(String materialId) async {
+    try {
+      _setLoading(true);
+      _clearError();
+
+      final material = getMaterialById(materialId);
+      if (material == null || material.fileUrl == null) {
+        _setError('Material or file URL not found');
+        return null;
+      }
+
+      // Download file from storage
+      final remote = MaterialRemoteDataSource();
+      final fileBytes = await remote.downloadMaterial(material.fileUrl!);
+
+      // Get app documents directory
+      final directory = await getApplicationDocumentsDirectory();
+      final materialsDir = Directory('${directory.path}/materials');
+      if (!await materialsDir.exists()) {
+        await materialsDir.create(recursive: true);
+      }
+
+      // Save file
+      final filePath = '${materialsDir.path}/${material.name}';
+      final file = File(filePath);
+      await file.writeAsBytes(fileBytes);
+
+      // Update material with local path
+      final updatedMaterial = material.copyWith(
+        filePath: filePath,
+        isDownloaded: true,
+        downloadCount: material.downloadCount + 1,
+        lastAccessedAt: DateTime.now(),
+      );
+
+      final index = _materials.indexWhere((m) => m.id == materialId);
+      if (index != -1) {
+        _materials[index] = updatedMaterial;
+        notifyListeners();
+      }
+
+      return filePath;
+    } catch (e) {
+      _setError(e.toString());
+      return null;
     } finally {
       _setLoading(false);
     }
@@ -339,6 +313,11 @@ class CourseMaterialProvider extends ChangeNotifier {
     return _materials
         .where((material) => material.courseId == courseId)
         .toList();
+  }
+
+  /// Get material count for a specific course
+  int getMaterialCountByCourseId(String courseId) {
+    return _materials.where((material) => material.courseId == courseId).length;
   }
 
   /// Set selected material

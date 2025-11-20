@@ -12,6 +12,7 @@ import '../features/course/views/create_course_screen.dart' as feature_course;
 import '../features/course/views/edit_course_screen.dart' as feature_course_edit;
 import 'screens/other_screens.dart';
 import '../features/materials/views/upload_materials_screen.dart';
+import '../features/materials/views/material_preview_screen.dart';
 
 /// App router configuration using GoRouter
 class AppRouter {
@@ -80,7 +81,12 @@ class AppRouter {
         name: 'courseDetails',
         builder: (context, state) {
           final courseId = state.pathParameters['courseId']!;
-          return CourseDetailsScreen(courseId: courseId);
+          final tabIndex = state.uri.queryParameters['tab'];
+          final initialTabIndex = tabIndex != null ? int.tryParse(tabIndex) : null;
+          return CourseDetailsScreen(
+            courseId: courseId,
+            initialTabIndex: initialTabIndex,
+          );
         },
       ),
 
@@ -167,6 +173,14 @@ class AppRouter {
           return UploadMaterialsScreen(preselectedCourseId: queryCourseId ?? extraCourseId);
         },
       ),
+      GoRoute(
+        path: '/material-preview/:materialId',
+        name: 'materialPreview',
+        builder: (context, state) {
+          final materialId = state.pathParameters['materialId']!;
+          return MaterialPreviewScreen(materialId: materialId);
+        },
+      ),
     ],
     errorBuilder: (context, state) => const NotFoundScreen(),
   );
@@ -248,8 +262,16 @@ class AppNavigation {
   }
 
   /// Navigate to course details
-  static void goCourseDetails(BuildContext context, String courseId) {
-    push(context, '/course-details/$courseId');
+  static void goCourseDetails(
+    BuildContext context,
+    String courseId, {
+    int? tabIndex,
+  }) {
+    if (tabIndex != null) {
+      push(context, '/course-details/$courseId?tab=$tabIndex');
+    } else {
+      push(context, '/course-details/$courseId');
+    }
   }
 
   /// Navigate to create course
@@ -311,6 +333,11 @@ class AppNavigation {
     } else {
       push(context, '/upload-materials');
     }
+  }
+
+  /// Navigate to material preview
+  static void goMaterialPreview(BuildContext context, String materialId) {
+    push(context, '/material-preview/$materialId');
   }
 }
 

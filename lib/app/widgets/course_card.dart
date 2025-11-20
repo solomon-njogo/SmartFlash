@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../data/models/course_model.dart';
 import '../../app/app_text_styles.dart';
+import '../../core/providers/course_material_provider.dart';
 
 /// Course card widget for displaying courses on home screen
 class CourseCard extends StatelessWidget {
@@ -137,12 +139,17 @@ class CourseCard extends StatelessWidget {
                     colorScheme,
                   ),
                   const SizedBox(width: 16),
-                  _buildStatItem(
-                    context,
-                    Icons.attach_file,
-                    '${course.totalMaterials}',
-                    'Materials',
-                    colorScheme,
+                  Consumer<CourseMaterialProvider>(
+                    builder: (context, materialProvider, child) {
+                      final materialCount = materialProvider.getMaterialCountByCourseId(course.id);
+                      return _buildStatItem(
+                        context,
+                        Icons.attach_file,
+                        '$materialCount',
+                        'Materials',
+                        colorScheme,
+                      );
+                    },
                   ),
                 ],
               ),

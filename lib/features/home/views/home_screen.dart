@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/providers/course_provider.dart';
+import '../../../core/providers/course_material_provider.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_name.dart';
 import '../../../app/app_text_styles.dart';
@@ -196,8 +197,14 @@ class HomeScreen extends StatelessWidget {
     BuildContext context,
     CourseProvider courseProvider,
   ) {
+    final materialProvider = Provider.of<CourseMaterialProvider>(context, listen: false);
     return RefreshIndicator(
-      onRefresh: () => courseProvider.refreshCourses(),
+      onRefresh: () async {
+        await Future.wait([
+          courseProvider.refreshCourses(),
+          materialProvider.refreshMaterials(),
+        ]);
+      },
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         itemCount: courseProvider.courses.length,

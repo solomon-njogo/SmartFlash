@@ -13,25 +13,44 @@ import '../../../app/router.dart';
 /// Course details screen with tabs for Decks, Quizzes, and Materials
 class CourseDetailsScreen extends StatefulWidget {
   final String courseId;
+  final int? initialTabIndex;
 
-  const CourseDetailsScreen({super.key, required this.courseId});
+  const CourseDetailsScreen({
+    super.key,
+    required this.courseId,
+    this.initialTabIndex,
+  });
 
   @override
   State<CourseDetailsScreen> createState() => _CourseDetailsScreenState();
 }
 
 class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
   CourseModel? _course;
   bool _isHeaderExpanded = true;
+  bool _materialsLoaded = false;
 
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialTabIndex ?? 0;
     _loadCourse();
     // Schedule the course access marking for after the build phase
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _markCourseAsAccessed();
+      // Ensure materials are loaded for the course to show accurate counts
+      final materialProvider = Provider.of<CourseMaterialProvider>(
+        context,
+        listen: false,
+      );
+      // Only load if materials haven't been loaded for this course yet
+      final courseMaterials = materialProvider.getMaterialsByCourseId(
+        widget.courseId,
+      );
+      if (courseMaterials.isEmpty && !materialProvider.isLoading) {
+        materialProvider.loadMaterialsForCourse(widget.courseId);
+      }
     });
   }
 
@@ -79,10 +98,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             onPressed:
                 _course == null
                     ? null
-                    : () => AppNavigation.goEditCourse(
-                      context,
-                      _course!.id,
-                    ),
+                    : () => AppNavigation.goEditCourse(context, _course!.id),
             icon: Icon(Icons.edit, color: colorScheme.onSurface),
           ),
         ],
@@ -127,6 +143,21 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
           ),
         ],
       ),
+      floatingActionButton:
+          _currentIndex == 2
+              ? FloatingActionButton.extended(
+                onPressed: () {
+                  AppNavigation.goUploadMaterials(
+                    context,
+                    courseId: widget.courseId,
+                  );
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Add Materials'),
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+              )
+              : null,
     );
   }
 
@@ -226,29 +257,35 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                             const SizedBox(height: 16),
                           ],
                           // Statistics
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 8,
-                            children: [
-                              _buildStatChip(
-                                context,
-                                Icons.library_books,
-                                '${_course!.totalDecks}',
-                                'Decks',
-                              ),
-                              _buildStatChip(
-                                context,
-                                Icons.quiz,
-                                '${_course!.totalQuizzes}',
-                                'Quizzes',
-                              ),
-                              _buildStatChip(
-                                context,
-                                Icons.attach_file,
-                                '${_course!.totalMaterials}',
-                                'Materials',
-                              ),
-                            ],
+                          Consumer<CourseMaterialProvider>(
+                            builder: (context, materialProvider, child) {
+                              final materialCount = materialProvider
+                                  .getMaterialCountByCourseId(_course!.id);
+                              return Wrap(
+                                spacing: 12,
+                                runSpacing: 8,
+                                children: [
+                                  _buildStatChip(
+                                    context,
+                                    Icons.library_books,
+                                    '${_course!.totalDecks}',
+                                    'Decks',
+                                  ),
+                                  _buildStatChip(
+                                    context,
+                                    Icons.quiz,
+                                    '${_course!.totalQuizzes}',
+                                    'Quizzes',
+                                  ),
+                                  _buildStatChip(
+                                    context,
+                                    Icons.attach_file,
+                                    '$materialCount',
+                                    'Materials',
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                           // Tags
                           if (_course!.tags.isNotEmpty) ...[
@@ -631,6 +668,18 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   Widget _buildMaterialsTab(BuildContext context) {
     return Consumer<CourseMaterialProvider>(
       builder: (context, materialProvider, child) {
+        // Load materials when tab is first shown (only once)
+        if (!_materialsLoaded && !materialProvider.isLoading) {
+          _materialsLoaded = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            materialProvider.loadMaterialsForCourse(widget.courseId);
+          });
+        }
+
+        if (materialProvider.isLoading && materialProvider.materials.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
         final courseMaterials = materialProvider.getMaterialsByCourseId(
           widget.courseId,
         );
@@ -643,30 +692,61 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             'This course doesn\'t have any materials yet.',
             'Upload Material',
             () {
-              AppNavigation.goUploadMaterials(context, courseId: widget.courseId);
+              AppNavigation.goUploadMaterials(
+                context,
+                courseId: widget.courseId,
+              );
             },
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: courseMaterials.length,
-          itemBuilder: (context, index) {
-            final material = courseMaterials[index];
-            return CourseMaterialCard(
-              material: material,
-              onTap: () {
-                // TODO: Open material
-              },
-              onDownload: () {
-                materialProvider.markMaterialAsAccessed(material.id);
-                // TODO: Implement download
-              },
-              onDelete: () {
-                _showDeleteMaterialDialog(context, materialProvider, material);
-              },
-            );
-          },
+        return RefreshIndicator(
+          onRefresh:
+              () => materialProvider.loadMaterialsForCourse(widget.courseId),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: courseMaterials.length,
+            itemBuilder: (context, index) {
+              final material = courseMaterials[index];
+              return CourseMaterialCard(
+                material: material,
+                onTap: () {
+                  AppNavigation.goMaterialPreview(context, material.id);
+                },
+                onDownload: () async {
+                  materialProvider.markMaterialAsAccessed(material.id);
+                  final filePath = await materialProvider.downloadMaterial(
+                    material.id,
+                  );
+                  if (filePath != null && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Material downloaded successfully'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          materialProvider.error ??
+                              'Failed to download material',
+                        ),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+                onDelete: () {
+                  _showDeleteMaterialDialog(
+                    context,
+                    materialProvider,
+                    material,
+                  );
+                },
+              );
+            },
+          ),
         );
       },
     );
@@ -756,7 +836,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
           (context) => AlertDialog(
             title: const Text('Delete Material'),
             content: Text(
-              'Are you sure you want to delete "${material.name}"?',
+              'Are you sure you want to delete "${material.name}"? This action cannot be undone.',
             ),
             actions: [
               TextButton(
@@ -764,9 +844,31 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                 child: const Text('Cancel'),
               ),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(context).pop();
-                  materialProvider.deleteMaterial(material.id);
+                  final success = await materialProvider.deleteMaterial(
+                    material.id,
+                  );
+                  if (context.mounted) {
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Deleted ${material.name}'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            materialProvider.error ??
+                                'Failed to delete material',
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 },
                 child: const Text('Delete'),
               ),
