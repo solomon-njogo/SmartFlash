@@ -12,17 +12,30 @@ class DocumentTextRemoteDataSource {
   final String _tableName;
 
   /// Store parsed document text
+  /// Uses UPSERT to handle cases where a record already exists (e.g., from previous attempts)
   Future<DocumentTextModel> storeDocumentText({
     required String materialId,
     required String extractedText,
     required int wordCount,
     Map<String, dynamic>? metadata,
   }) async {
+    final storageStartTime = DateTime.now();
     try {
+      Logger.info(
+        '=== Starting document text storage ===',
+        tag: 'DocumentText',
+      );
       Logger.info(
         'Storing document text for material: $materialId',
         tag: 'DocumentText',
       );
+      Logger.info(
+        'Text statistics - Length: ${extractedText.length} characters, Words: $wordCount',
+        tag: 'DocumentText',
+      );
+      if (metadata != null) {
+        Logger.debug('Metadata: $metadata', tag: 'DocumentText');
+      }
 
       final textLength = extractedText.length;
       final now = DateTime.now();
@@ -38,27 +51,94 @@ class DocumentTextRemoteDataSource {
         'metadata': metadata,
       };
 
-      Logger.logDatabase('INSERT', _tableName, data: row);
-      final response =
-          await _client.from(_tableName).insert(row).select().single();
+      Logger.debug(
+        'Prepared database row - Material ID: $materialId, Text Length: $textLength, Word Count: $wordCount, Status: ${ParsingStatus.completed.name}',
+        tag: 'DocumentText',
+      );
 
+      // Check if record exists first, then INSERT or UPDATE
+      // This handles the case where material_id has a unique index but not a unique constraint
+      Logger.logDatabase(
+        'SELECT',
+        _tableName,
+        data: {'material_id': materialId},
+      );
+      final existingRecord =
+          await _client
+              .from(_tableName)
+              .select('id')
+              .eq('material_id', materialId)
+              .maybeSingle();
+
+      final dbOperationStartTime = DateTime.now();
+      final Map<String, dynamic> response;
+
+      if (existingRecord != null) {
+        // Update existing record
+        Logger.logDatabase('UPDATE', _tableName, data: row);
+        Logger.info(
+          'Updating existing document text record for material: $materialId',
+          tag: 'DocumentText',
+        );
+        response =
+            await _client
+                .from(_tableName)
+                .update(row)
+                .eq('material_id', materialId)
+                .select()
+                .single();
+      } else {
+        // Insert new record
+        Logger.logDatabase('INSERT', _tableName, data: row);
+        Logger.info(
+          'Inserting new document text record for material: $materialId',
+          tag: 'DocumentText',
+        );
+        response = await _client.from(_tableName).insert(row).select().single();
+      }
+
+      final dbOperationDuration = DateTime.now().difference(
+        dbOperationStartTime,
+      );
+
+      Logger.info(
+        'Database operation completed in ${dbOperationDuration.inMilliseconds}ms',
+        tag: 'DocumentText',
+      );
       Logger.info(
         'Document text stored successfully for material: $materialId',
         tag: 'DocumentText',
       );
 
-      return DocumentTextModel.fromJson(response);
+      final documentText = DocumentTextModel.fromJson(response);
+      final totalDuration = DateTime.now().difference(storageStartTime);
+      Logger.info(
+        '=== Document text storage completed in ${totalDuration.inMilliseconds}ms ===',
+        tag: 'DocumentText',
+      );
+      Logger.info(
+        'Stored document text record - ID: ${documentText.id}, Material ID: ${documentText.materialId}, Status: ${documentText.parsingStatus}',
+        tag: 'DocumentText',
+      );
+
+      return documentText;
     } on PostgrestException catch (e, st) {
+      final totalDuration = DateTime.now().difference(storageStartTime);
       Logger.error(
-        'PostgrestException storing document text: ${e.message}',
+        'PostgrestException storing document text after ${totalDuration.inMilliseconds}ms: ${e.message}',
         tag: 'DocumentText',
         error: e,
         stackTrace: st,
       );
+      Logger.error(
+        'Database error details - Code: ${e.code}, Message: ${e.message}, Details: ${e.details}, Hint: ${e.hint}',
+        tag: 'DocumentText',
+      );
       throw Exception('Database error: ${e.message}');
     } catch (e, st) {
+      final totalDuration = DateTime.now().difference(storageStartTime);
       Logger.error(
-        'Error storing document text: $e',
+        'Error storing document text after ${totalDuration.inMilliseconds}ms: $e',
         tag: 'DocumentText',
         error: e,
         stackTrace: st,

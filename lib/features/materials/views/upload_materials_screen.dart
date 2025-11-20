@@ -10,6 +10,7 @@ import '../../../app/router.dart';
 import '../../../core/providers/course_material_provider.dart';
 import '../../../core/providers/course_provider.dart';
 import '../../../data/models/course_material_model.dart';
+import '../../../core/utils/logger.dart';
 
 class UploadMaterialsScreen extends StatefulWidget {
   final String? preselectedCourseId;
@@ -34,9 +35,25 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
   }
 
   Future<void> _pickFiles() async {
+    Logger.info('File picker opened', tag: 'FileUpload');
     final result = await FilePicker.platform.pickFiles(allowMultiple: true);
     final files = result?.files ?? [];
-    if (!mounted || files.isEmpty) return;
+    
+    if (!mounted || files.isEmpty) {
+      Logger.info('No files selected or dialog cancelled', tag: 'FileUpload');
+      return;
+    }
+
+    Logger.info(
+      'Files selected: ${files.length} file(s)',
+      tag: 'FileUpload',
+    );
+    for (final file in files) {
+      Logger.debug(
+        'Selected file: ${file.name}, Size: ${file.size} bytes, Extension: ${file.extension}',
+        tag: 'FileUpload',
+      );
+    }
 
     // Validate file sizes
     final List<String> errors = [];
@@ -44,6 +61,10 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
 
     for (final file in files) {
       if (file.size > maxFileSizeBytes) {
+        Logger.warning(
+          'File ${file.name} exceeds maximum size: ${file.size} bytes > $maxFileSizeBytes bytes',
+          tag: 'FileUpload',
+        );
         errors.add('${file.name} exceeds maximum size of 50MB');
       } else {
         // Check if file is already in the list (by name and identifier)
@@ -55,6 +76,15 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
 
         if (!isDuplicate) {
           validFiles.add(file);
+          Logger.debug(
+            'File ${file.name} validated and added to upload queue',
+            tag: 'FileUpload',
+          );
+        } else {
+          Logger.debug(
+            'File ${file.name} is a duplicate, skipping',
+            tag: 'FileUpload',
+          );
         }
       }
     }
@@ -146,13 +176,30 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
   }
 
   Future<void> _uploadAll() async {
-    if (_selectedCourseId == null || _selectedFiles.isEmpty) return;
+    if (_selectedCourseId == null || _selectedFiles.isEmpty) {
+      Logger.warning(
+        'Upload cancelled: courseId=${_selectedCourseId}, files=${_selectedFiles.length}',
+        tag: 'FileUpload',
+      );
+      return;
+    }
+    
+    Logger.info(
+      'Starting upload batch: ${_selectedFiles.length} file(s) for course: $_selectedCourseId',
+      tag: 'FileUpload',
+    );
+    
     final materials = context.read<CourseMaterialProvider>();
     setState(() => _isUploading = true);
 
     int successCount = 0;
 
     for (final f in List<PlatformFile>.from(_selectedFiles)) {
+      Logger.info(
+        'Processing file: ${f.name} (${f.size} bytes, type: ${f.extension})',
+        tag: 'FileUpload',
+      );
+      
       setState(() {
         _statusByName[f.name] = 'Preparing...';
         _progressByName[f.name] = 0.0;
@@ -163,14 +210,30 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
         final id =
             '${_selectedCourseId}_mat_${now.millisecondsSinceEpoch}_${f.name.hashCode}';
 
+        Logger.debug(
+          'Generated material ID: $id for file: ${f.name}',
+          tag: 'FileUpload',
+        );
+
         // Get user ID from Supabase
         final userId = Supabase.instance.client.auth.currentUser?.id ?? 'user1';
+        
+        Logger.debug(
+          'Using user ID: $userId for upload',
+          tag: 'FileUpload',
+        );
+
+        final fileType = _mapExtensionToFileType(f.extension);
+        Logger.debug(
+          'Mapped file extension ${f.extension} to FileType: ${fileType.name}',
+          tag: 'FileUpload',
+        );
 
         final model = CourseMaterialModel(
           id: id,
           courseId: _selectedCourseId!,
           name: f.name,
-          fileType: _mapExtensionToFileType(f.extension),
+          fileType: fileType,
           fileSizeBytes: f.size,
           filePath: f.path, // May be null on web
           uploadedBy: userId,
@@ -182,8 +245,26 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
         Uint8List? fileBytes;
         if (f.path == null && f.bytes != null) {
           fileBytes = f.bytes;
+          Logger.debug(
+            'Using file bytes (web platform): ${fileBytes?.length ?? 0} bytes',
+            tag: 'FileUpload',
+          );
+        } else if (f.path != null) {
+          Logger.debug(
+            'Using file path (mobile/desktop platform): ${f.path}',
+            tag: 'FileUpload',
+          );
+        } else {
+          Logger.warning(
+            'No file path or bytes available for ${f.name}',
+            tag: 'FileUpload',
+          );
         }
 
+        Logger.info(
+          'Starting upload process for: ${f.name}',
+          tag: 'FileUpload',
+        );
         setState(() => _statusByName[f.name] = 'Processing...');
 
         final ok = await materials.createMaterial(
@@ -211,6 +292,10 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
 
         if (ok) {
           successCount++;
+          Logger.info(
+            'File upload completed successfully: ${f.name}',
+            tag: 'FileUpload',
+          );
           setState(() {
             _statusByName[f.name] = 'Saved';
             _progressByName[f.name] = 1.0;
@@ -223,6 +308,10 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
           );
         } else {
           final errorMsg = materials.error ?? 'Unknown error';
+          Logger.error(
+            'File upload failed: ${f.name}, Error: $errorMsg',
+            tag: 'FileUpload',
+          );
           setState(() {
             _statusByName[f.name] = 'Failed';
             _progressByName.remove(f.name);
@@ -235,7 +324,13 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
             ),
           );
         }
-      } catch (e) {
+      } catch (e, stackTrace) {
+        Logger.error(
+          'Exception during file upload: ${f.name}',
+          tag: 'FileUpload',
+          error: e,
+          stackTrace: stackTrace,
+        );
         if (!mounted) return;
         setState(() {
           _statusByName[f.name] = 'Failed';
@@ -254,9 +349,18 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
     if (mounted) {
       setState(() => _isUploading = false);
 
+      Logger.info(
+        'Upload batch completed: $successCount/${_selectedFiles.length} file(s) uploaded successfully',
+        tag: 'FileUpload',
+      );
+
       // If at least one file was successfully uploaded and we have a course ID,
       // navigate back to the course details page on the materials tab
       if (successCount > 0 && _selectedCourseId != null) {
+        Logger.info(
+          'Reloading materials for course: $_selectedCourseId',
+          tag: 'FileUpload',
+        );
         // Reload materials for the course to show the newly uploaded ones
         materials.loadMaterialsForCourse(_selectedCourseId!);
 
