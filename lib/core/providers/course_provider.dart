@@ -32,118 +32,10 @@ class CourseProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-
-      // Sample data for 5 courses as specified in the plan
-      _courses = [
-        CourseModel(
-          id: 'cs101',
-          name: 'Computer Science 101',
-          description:
-              'Introduction to programming, data structures, and algorithms',
-          iconName: 'laptop',
-          colorValue: 0xFF2196F3, // Blue
-          deckIds: ['cs101_deck1', 'cs101_deck2', 'cs101_deck3'],
-          quizIds: ['cs101_quiz1', 'cs101_quiz2'],
-          materialIds: ['cs101_mat1', 'cs101_mat2', 'cs101_mat3', 'cs101_mat4'],
-          createdBy: 'user1',
-          createdAt: DateTime.now().subtract(const Duration(days: 30)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 2)),
-          category: 'Technology',
-          subject: 'Computer Science',
-          totalDecks: 3,
-          totalQuizzes: 2,
-          totalMaterials: 4,
-          lastAccessedAt: DateTime.now().subtract(const Duration(days: 1)),
-          tags: ['programming', 'algorithms', 'data-structures'],
-        ),
-        CourseModel(
-          id: 'bio_adv',
-          name: 'Biology Advanced',
-          description: 'Advanced topics in cell biology and genetics',
-          iconName: 'biotech',
-          colorValue: 0xFF4CAF50, // Green
-          deckIds: ['bio_adv_deck1', 'bio_adv_deck2'],
-          quizIds: ['bio_adv_quiz1'],
-          materialIds: ['bio_adv_mat1', 'bio_adv_mat2', 'bio_adv_mat3'],
-          createdBy: 'user1',
-          createdAt: DateTime.now().subtract(const Duration(days: 25)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 5)),
-          category: 'Science',
-          subject: 'Biology',
-          totalDecks: 2,
-          totalQuizzes: 1,
-          totalMaterials: 3,
-          lastAccessedAt: DateTime.now().subtract(const Duration(days: 3)),
-          tags: ['biology', 'genetics', 'cell-biology'],
-        ),
-        CourseModel(
-          id: 'world_history',
-          name: 'World History',
-          description: 'Comprehensive study of world civilizations and events',
-          iconName: 'public',
-          colorValue: 0xFF8D6E63, // Brown
-          deckIds: ['hist_deck1', 'hist_deck2', 'hist_deck3'],
-          quizIds: ['hist_quiz1', 'hist_quiz2', 'hist_quiz3'],
-          materialIds: ['hist_mat1', 'hist_mat2'],
-          createdBy: 'user1',
-          createdAt: DateTime.now().subtract(const Duration(days: 20)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 1)),
-          category: 'Social Science',
-          subject: 'History',
-          totalDecks: 3,
-          totalQuizzes: 3,
-          totalMaterials: 2,
-          lastAccessedAt: DateTime.now().subtract(const Duration(days: 2)),
-          tags: ['history', 'civilizations', 'world-events'],
-        ),
-        CourseModel(
-          id: 'math_course',
-          name: 'Mathematics',
-          description:
-              'Comprehensive mathematics covering algebra, geometry, calculus, and statistics',
-          iconName: 'calculate',
-          colorValue: 0xFF9C27B0, // Purple
-          deckIds: ['math_deck1', 'math_deck2', 'math_deck3', 'math_deck4'],
-          quizIds: ['math_quiz1', 'math_quiz2'],
-          materialIds: [
-            'math_mat1',
-            'math_mat2',
-            'math_mat3',
-            'math_mat4',
-            'math_mat5',
-          ],
-          createdBy: 'user1',
-          createdAt: DateTime.now().subtract(const Duration(days: 15)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 4)),
-          category: 'Mathematics',
-          subject: 'Mathematics',
-          totalDecks: 4,
-          totalQuizzes: 2,
-          totalMaterials: 5,
-          lastAccessedAt: DateTime.now().subtract(const Duration(days: 1)),
-          tags: ['algebra', 'geometry', 'calculus', 'statistics'],
-        ),
-        CourseModel(
-          id: 'spanish_lang',
-          name: 'Language Learning - Spanish',
-          description: 'Spanish vocabulary and common phrases for beginners',
-          iconName: 'translate',
-          colorValue: 0xFFFF9800, // Orange
-          deckIds: ['spanish_deck1', 'spanish_deck2'],
-          quizIds: ['spanish_quiz1'],
-          materialIds: ['spanish_mat1', 'spanish_mat2', 'spanish_mat3'],
-          createdBy: 'user1',
-          createdAt: DateTime.now().subtract(const Duration(days: 10)),
-          updatedAt: DateTime.now().subtract(const Duration(days: 2)),
-          category: 'Language',
-          subject: 'Spanish',
-          totalDecks: 2,
-          totalQuizzes: 1,
-          totalMaterials: 3,
-          lastAccessedAt: DateTime.now().subtract(const Duration(days: 1)),
-          tags: ['spanish', 'vocabulary', 'language-learning'],
-        ),
-      ];
+      // Fetch courses from remote (Supabase). This replaces the previous
+      // hard-coded sample data so that the app shows courses stored in the DB.
+      final remoteCourses = await _remote.fetchCourses();
+      _courses = remoteCourses;
       notifyListeners();
     } catch (e) {
       _setError(e.toString());
@@ -162,7 +54,10 @@ class CourseProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      Logger.logUserAction('CreateCourse:start', data: {'id': course.id, 'name': course.name});
+      Logger.logUserAction(
+        'CreateCourse:start',
+        data: {'id': course.id, 'name': course.name},
+      );
       // Persist remotely first (RLS uses auth user as created_by)
       await _remote.insertCourse(course);
 

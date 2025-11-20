@@ -13,7 +13,7 @@ class ProfileRemoteDataSource {
   Future<void> ensureCurrentProfile() async {
     final String? userId = _client.auth.currentUser?.id;
     if (userId == null) {
-      throw Exception('Not authenticated');
+      throw Exception('Not authenticated'); 
     }
     try {
       final existing =
