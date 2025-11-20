@@ -9,8 +9,8 @@ class AIConstants {
           ? ApiConstants.openRouterBaseUrl
           : 'https://openrouter.ai/api/v1';
 
-  // Default AI Model (GPT-4 via OpenRouter)
-  static const String defaultModel = 'openai/gpt-4';
+  // Default AI Model (GPT-OSS-120B via OpenRouter)
+  static const String defaultModel = 'openai/gpt-oss-120b';
 
   // Alternative models
   static const String gpt4Turbo = 'openai/gpt-4-turbo';

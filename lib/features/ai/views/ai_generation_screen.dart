@@ -19,6 +19,42 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
   CourseMaterialModel? _selectedMaterial;
   GenerationType? _generationType;
   String _difficulty = 'medium';
+  bool _hasNavigatedToReview = false;
+  AIGenerationProvider? _provider;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    if (_provider != null) {
+      _provider!.removeListener(_onProviderChanged);
+    }
+    super.dispose();
+  }
+
+  void _onProviderChanged() {
+    if (_provider == null || !mounted) return;
+
+    // Auto-navigate to review screen when quiz generation completes
+    if (!_hasNavigatedToReview &&
+        _provider!.status == GenerationStatus.completed &&
+        _provider!.generationType == GenerationType.quiz &&
+        _provider!.hasGeneratedContent) {
+      _hasNavigatedToReview = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          AppNavigation.goAIReview(context);
+        }
+      });
+    }
+    // Reset navigation flag if status changes back to idle
+    if (_provider!.status == GenerationStatus.idle) {
+      _hasNavigatedToReview = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +65,25 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
       ),
       body: Consumer<AIGenerationProvider>(
         builder: (context, provider, child) {
+          // Set up listener on first build
+          if (_provider != provider) {
+            _provider?.removeListener(_onProviderChanged);
+            _provider = provider;
+            provider.addListener(_onProviderChanged);
+          }
+
+          // Check for auto-navigation in build (as backup)
+          if (!_hasNavigatedToReview &&
+              provider.status == GenerationStatus.completed &&
+              provider.generationType == GenerationType.quiz &&
+              provider.hasGeneratedContent) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && !_hasNavigatedToReview) {
+                _hasNavigatedToReview = true;
+                AppNavigation.goAIReview(context);
+              }
+            });
+          }
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -56,9 +111,10 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                 // Error Display
                 if (provider.error != null) _buildErrorDisplay(provider.error!),
 
-                // Success - Navigate to Review
+                // Success - Show message (auto-navigation happens via listener)
                 if (provider.status == GenerationStatus.completed &&
-                    provider.hasGeneratedContent)
+                    provider.hasGeneratedContent &&
+                    provider.generationType == GenerationType.flashcards)
                   _buildSuccessActions(provider),
               ],
             ),

@@ -17,10 +17,19 @@ class SupabaseService {
 
   SupabaseClient? _client;
   SupabaseClient get client {
+    // If client is null but Supabase is already initialized, use it
     if (_client == null) {
-      throw Exception(
-        'SupabaseService not initialized. Call initialize() first.',
-      );
+      try {
+        _client = Supabase.instance.client;
+        _isInitialized = true;
+        Logger.info(
+          'SupabaseService using already initialized Supabase instance',
+        );
+      } catch (e) {
+        throw Exception(
+          'SupabaseService not initialized. Call initialize() first.',
+        );
+      }
     }
     return _client!;
   }
@@ -197,8 +206,20 @@ class SupabaseService {
     try {
       Logger.info('Creating deck: ${deck.name}');
 
+      // Only include fields that exist in the database schema
+      final deckData = {
+        'id': deck.id,
+        'name': deck.name,
+        'description': deck.description,
+        'created_by': deck.createdBy,
+        'created_at': deck.createdAt.toIso8601String(),
+        'updated_at': deck.updatedAt.toIso8601String(),
+        'is_ai_generated': deck.isAIGenerated,
+        if (deck.courseId != null) 'course_id': deck.courseId,
+      };
+
       final response =
-          await client.from('decks').insert(deck.toJson()).select().single();
+          await client.from('decks').insert(deckData).select().single();
 
       Logger.info('Deck created successfully');
       return DeckModel.fromJson(response);
@@ -213,10 +234,19 @@ class SupabaseService {
     try {
       Logger.info('Updating deck: ${deck.id}');
 
+      // Only include fields that exist in the database schema
+      final deckData = {
+        'name': deck.name,
+        'description': deck.description,
+        'updated_at': deck.updatedAt.toIso8601String(),
+        'is_ai_generated': deck.isAIGenerated,
+        if (deck.courseId != null) 'course_id': deck.courseId,
+      };
+
       final response =
           await client
               .from('decks')
-              .update(deck.toJson())
+              .update(deckData)
               .eq('id', deck.id)
               .select()
               .single();
@@ -345,11 +375,47 @@ class SupabaseService {
     try {
       Logger.info('Creating quiz: ${quiz.id}');
 
+      // Use toDatabaseJson() to only include fields that exist in the database schema
       final response =
-          await client.from('quizzes').insert(quiz.toJson()).select().single();
+          await client
+              .from('quizzes')
+              .insert(quiz.toDatabaseJson())
+              .select()
+              .single();
 
       Logger.info('Quiz created successfully');
-      return QuizModel.fromJson(response);
+      // Convert snake_case from database to camelCase for model
+      return QuizModel.fromJson({
+        'id': response['id'],
+        'name': response['name'],
+        'description': response['description'],
+        'deckId': response['deck_id'],
+        'questionIds': response['question_ids'] ?? [],
+        'createdBy': response['created_by'],
+        'createdAt': response['created_at'],
+        'updatedAt': response['updated_at'],
+        'isAIGenerated': response['is_ai_generated'] ?? false,
+        // Set defaults for fields not in database
+        'status': 'draft',
+        'totalQuestions': quiz.totalQuestions,
+        'totalPoints': quiz.totalPoints,
+        'isRandomized': quiz.isRandomized,
+        'allowRetake': quiz.allowRetake,
+        'maxAttempts': quiz.maxAttempts,
+        'showCorrectAnswers': quiz.showCorrectAnswers,
+        'showExplanations': quiz.showExplanations,
+        'showScore': quiz.showScore,
+        'tags': quiz.tags,
+        'settings': quiz.settings,
+        'category': quiz.category,
+        'subject': quiz.subject,
+        'difficulty': quiz.difficulty,
+        'metadata': quiz.metadata,
+        'totalAttempts': quiz.totalAttempts,
+        'averageScore': quiz.averageScore,
+        'averageTime': quiz.averageTime.inMicroseconds,
+        'lastTakenAt': quiz.lastTakenAt?.toIso8601String(),
+      });
     } catch (e) {
       Logger.error('Failed to create quiz: $e');
       rethrow;

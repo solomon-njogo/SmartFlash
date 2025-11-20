@@ -36,13 +36,14 @@ class QuestionModelAdapter extends TypeAdapter<QuestionModel> {
       metadata: (fields[16] as Map?)?.cast<String, dynamic>(),
       tags: (fields[17] as List?)?.cast<String>(),
       difficulty: fields[18] as DifficultyLevel,
+      fsrsState: fields[19] as FSRSCardState?,
     );
   }
 
   @override
   void write(BinaryWriter writer, QuestionModel obj) {
     writer
-      ..writeByte(19)
+      ..writeByte(20)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -80,7 +81,9 @@ class QuestionModelAdapter extends TypeAdapter<QuestionModel> {
       ..writeByte(17)
       ..write(obj.tags)
       ..writeByte(18)
-      ..write(obj.difficulty);
+      ..write(obj.difficulty)
+      ..writeByte(19)
+      ..write(obj.fsrsState);
   }
 
   @override
@@ -182,6 +185,9 @@ QuestionModel _$QuestionModelFromJson(Map<String, dynamic> json) =>
       difficulty:
           $enumDecodeNullable(_$DifficultyLevelEnumMap, json['difficulty']) ??
               DifficultyLevel.medium,
+      fsrsState: json['fsrsState'] == null
+          ? null
+          : FSRSCardState.fromJson(json['fsrsState'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$QuestionModelToJson(QuestionModel instance) =>
@@ -205,6 +211,7 @@ Map<String, dynamic> _$QuestionModelToJson(QuestionModel instance) =>
       'metadata': instance.metadata,
       'tags': instance.tags,
       'difficulty': _$DifficultyLevelEnumMap[instance.difficulty]!,
+      'fsrsState': instance.fsrsState,
     };
 
 const _$QuestionTypeEnumMap = {

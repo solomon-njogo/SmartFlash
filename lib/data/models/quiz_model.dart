@@ -148,6 +148,22 @@ class QuizModel extends HiveObject {
   /// Convert QuizModel to JSON
   Map<String, dynamic> toJson() => _$QuizModelToJson(this);
 
+  /// Convert QuizModel to database-compatible JSON (only fields that exist in the schema)
+  /// This excludes fields like allowRetake, maxAttempts, etc. that are not in the database
+  Map<String, dynamic> toDatabaseJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'deck_id': deckId,
+      'question_ids': questionIds,
+      'created_by': createdBy,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'is_ai_generated': isAIGenerated,
+    };
+  }
+
   /// Create a copy of QuizModel with updated fields
   QuizModel copyWith({
     String? id,

@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 import '../../../core/providers/ai_generation_provider.dart';
 import '../../../core/providers/ai_review_provider.dart';
 import '../../../app/app_text_styles.dart';
@@ -21,15 +23,20 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
   @override
   void initState() {
     super.initState();
-    final reviewProvider = context.read<AIReviewProvider>();
-    final generationProvider = context.read<AIGenerationProvider>();
-    reviewProvider.startReview();
-    
-    // Set default deck name
-    if (generationProvider.selectedMaterial != null) {
-      _deckNameController.text = 
-          '${generationProvider.selectedMaterial!.name} - ${generationProvider.generationType == GenerationType.flashcards ? 'Flashcards' : 'Quiz'}';
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final reviewProvider = context.read<AIReviewProvider>();
+      final generationProvider = context.read<AIGenerationProvider>();
+      
+      // Set the generation provider so review provider can access the generated content
+      reviewProvider.setGenerationProvider(generationProvider);
+      reviewProvider.startReview();
+      
+      // Set default deck name
+      if (generationProvider.selectedMaterial != null) {
+        _deckNameController.text = 
+            '${generationProvider.selectedMaterial!.name} - ${generationProvider.generationType == GenerationType.flashcards ? 'Flashcards' : 'Quiz'}';
+      }
+    });
   }
 
   @override
@@ -57,7 +64,9 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'No content to review',
-                    style: AppTextStyles.titleMedium,
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   ElevatedButton(
@@ -76,8 +85,8 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: generationProvider.generationType == GenerationType.flashcards
-                      ? _buildFlashcardsPreview(generationProvider, reviewProvider)
-                      : _buildQuizPreview(generationProvider, reviewProvider),
+                      ? _buildFlashcardsPreview(generationProvider, reviewProvider, context)
+                      : _buildQuizPreview(generationProvider, reviewProvider, context),
                 ),
               ),
 
@@ -93,11 +102,19 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
   Widget _buildFlashcardsPreview(
     AIGenerationProvider generationProvider,
     AIReviewProvider reviewProvider,
+    BuildContext context,
   ) {
     final flashcards = generationProvider.generatedFlashcards ?? [];
+    final theme = Theme.of(context);
+    final textColor = theme.colorScheme.onSurface;
 
     if (flashcards.isEmpty) {
-      return const Center(child: Text('No flashcards generated'));
+      return Center(
+        child: Text(
+          'No flashcards generated',
+          style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+        ),
+      );
     }
 
     return Column(
@@ -105,7 +122,7 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
       children: [
         Text(
           'Generated Flashcards (${flashcards.length})',
-          style: AppTextStyles.titleLarge,
+          style: AppTextStyles.titleLarge.copyWith(color: textColor),
         ),
         const SizedBox(height: 16),
         ...flashcards.asMap().entries.map((entry) {
@@ -115,7 +132,9 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
 
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
-            color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
+            color: isSelected 
+                ? theme.colorScheme.primaryContainer.withOpacity(0.3)
+                : theme.colorScheme.surface,
             child: InkWell(
               onTap: () => reviewProvider.toggleFlashcardSelection(index),
               child: Padding(
@@ -131,11 +150,14 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
                         ),
                         Text(
                           'Card ${index + 1}',
-                          style: AppTextStyles.titleMedium,
+                          style: AppTextStyles.titleMedium.copyWith(color: textColor),
                         ),
                         const Spacer(),
                         Chip(
-                          label: Text(flashcard.difficulty.name),
+                          label: Text(
+                            flashcard.difficulty.name,
+                            style: TextStyle(color: textColor),
+                          ),
                           backgroundColor: AppColors.primary.withOpacity(0.2),
                         ),
                       ],
@@ -145,24 +167,26 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
                       'Front:',
                       style: AppTextStyles.labelMedium.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       flashcard.frontText,
-                      style: AppTextStyles.bodyLarge,
+                      style: AppTextStyles.bodyLarge.copyWith(color: textColor),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Back:',
                       style: AppTextStyles.labelMedium.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       flashcard.backText,
-                      style: AppTextStyles.bodyLarge,
+                      style: AppTextStyles.bodyLarge.copyWith(color: textColor),
                     ),
                   ],
                 ),
@@ -177,11 +201,19 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
   Widget _buildQuizPreview(
     AIGenerationProvider generationProvider,
     AIReviewProvider reviewProvider,
+    BuildContext context,
   ) {
     final quiz = generationProvider.generatedQuiz;
+    final theme = Theme.of(context);
+    final textColor = theme.colorScheme.onSurface;
 
     if (quiz == null || quiz.questions.isEmpty) {
-      return const Center(child: Text('No quiz generated'));
+      return Center(
+        child: Text(
+          'No quiz generated',
+          style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+        ),
+      );
     }
 
     return Column(
@@ -189,19 +221,19 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
       children: [
         Text(
           quiz.name,
-          style: AppTextStyles.titleLarge,
+          style: AppTextStyles.titleLarge.copyWith(color: textColor),
         ),
         if (quiz.description != null) ...[
           const SizedBox(height: 8),
           Text(
             quiz.description!,
-            style: AppTextStyles.bodyMedium,
+            style: AppTextStyles.bodyMedium.copyWith(color: textColor),
           ),
         ],
         const SizedBox(height: 16),
         Text(
           'Questions (${quiz.questions.length})',
-          style: AppTextStyles.titleMedium,
+          style: AppTextStyles.titleMedium.copyWith(color: textColor),
         ),
         const SizedBox(height: 12),
         ...quiz.questions.asMap().entries.map((entry) {
@@ -211,7 +243,9 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
 
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
-            color: isSelected ? AppColors.primary.withOpacity(0.1) : null,
+            color: isSelected 
+                ? theme.colorScheme.primaryContainer.withOpacity(0.3)
+                : theme.colorScheme.surface,
             child: InkWell(
               onTap: () => reviewProvider.toggleQuestionSelection(index),
               child: Padding(
@@ -227,14 +261,14 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
                         ),
                         Text(
                           'Question ${index + 1}',
-                          style: AppTextStyles.titleMedium,
+                          style: AppTextStyles.titleMedium.copyWith(color: textColor),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Text(
                       question.questionText,
-                      style: AppTextStyles.bodyLarge,
+                      style: AppTextStyles.bodyLarge.copyWith(color: textColor),
                     ),
                     const SizedBox(height: 12),
                     if (question.options.isNotEmpty) ...[
@@ -242,6 +276,7 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
                         'Options:',
                         style: AppTextStyles.labelMedium.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: textColor,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -253,7 +288,7 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
                           decoration: BoxDecoration(
                             color: isCorrect
                                 ? AppColors.success.withOpacity(0.2)
-                                : AppColors.surfaceVariant,
+                                : theme.colorScheme.surfaceVariant,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Row(
@@ -261,7 +296,12 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
                               if (isCorrect)
                                 const Icon(Icons.check_circle, color: AppColors.success, size: 16),
                               if (isCorrect) const SizedBox(width: 8),
-                              Expanded(child: Text(option)),
+                              Expanded(
+                                child: Text(
+                                  option,
+                                  style: AppTextStyles.bodyMedium.copyWith(color: textColor),
+                                ),
+                              ),
                             ],
                           ),
                         );
@@ -273,12 +313,13 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
                         'Explanation:',
                         style: AppTextStyles.labelMedium.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: textColor,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         question.explanation!,
-                        style: AppTextStyles.bodyMedium,
+                        style: AppTextStyles.bodyMedium.copyWith(color: textColor),
                       ),
                     ],
                   ],
@@ -298,7 +339,7 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -310,18 +351,16 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Deck name input (for flashcards)
-          if (generationProvider.generationType == GenerationType.flashcards) ...[
-            TextField(
-              controller: _deckNameController,
-              decoration: const InputDecoration(
-                labelText: 'Deck Name',
-                border: OutlineInputBorder(),
-                hintText: 'Enter deck name',
-              ),
+          // Deck name input
+          TextField(
+            controller: _deckNameController,
+            decoration: const InputDecoration(
+              labelText: 'Deck Name',
+              border: OutlineInputBorder(),
+              hintText: 'Enter deck name',
             ),
-            const SizedBox(height: 12),
-          ],
+          ),
+          const SizedBox(height: 12),
 
           // Select All / Deselect All
           Row(
@@ -345,6 +384,14 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
 
           const SizedBox(height: 8),
 
+          // Debug info (temporary)
+          if (kDebugMode)
+            Text(
+              'Status: ${reviewProvider.status}, Has Content: ${generationProvider.hasGeneratedContent}',
+              style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurface),
+            ),
+          const SizedBox(height: 8),
+
           // Accept Button
           SizedBox(
             width: double.infinity,
@@ -352,47 +399,82 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
               onPressed: reviewProvider.status == ReviewStatus.saving
                   ? null
                   : () async {
-                      final userId = Supabase.instance.client.auth.currentUser?.id;
-                      if (userId == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Not authenticated')),
-                        );
-                        return;
-                      }
+                      print('Accept button pressed!'); // Debug log
+                      try {
+                        final userId = Supabase.instance.client.auth.currentUser?.id;
+                        print('User ID: $userId'); // Debug log
+                        if (userId == null) {
+                          print('No user ID found'); // Debug log
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Not authenticated')),
+                          );
+                          return;
+                        }
 
-                      bool success = false;
-                      if (generationProvider.generationType == GenerationType.flashcards) {
-                        success = await reviewProvider.acceptFlashcards(
-                          deckId: 'deck_${DateTime.now().millisecondsSinceEpoch}',
-                          deckName: _deckNameController.text.isNotEmpty
+                        print('Starting save process...'); // Debug log
+                        bool success = false;
+                        const uuid = Uuid();
+                        if (generationProvider.generationType == GenerationType.flashcards) {
+                          print('Saving flashcards...'); // Debug log
+                          success = await reviewProvider.acceptFlashcards(
+                            deckId: uuid.v4(), // Generate proper UUID
+                            deckName: _deckNameController.text.isNotEmpty
+                                ? _deckNameController.text
+                                : 'AI Generated Deck',
+                            createdBy: userId,
+                          );
+                        } else {
+                          print('Saving quiz...'); // Debug log
+                          // Use quiz name for deck name, or fallback to default
+                          final quizName = generationProvider.generatedQuiz?.name ?? 'AI Generated Quiz';
+                          final deckName = _deckNameController.text.isNotEmpty
                               ? _deckNameController.text
-                              : 'AI Generated Deck',
-                          createdBy: userId,
-                        );
-                      } else {
-                        success = await reviewProvider.acceptQuiz(
-                          deckId: 'deck_${DateTime.now().millisecondsSinceEpoch}',
-                          createdBy: userId,
-                        );
-                      }
+                              : '$quizName - Deck';
+                          print('Deck name: $deckName'); // Debug log
+                          success = await reviewProvider.acceptQuiz(
+                            deckId: uuid.v4(), // Generate proper UUID
+                            deckName: deckName,
+                            createdBy: userId,
+                          );
+                          print('Quiz save result: $success'); // Debug log
+                        }
 
-                      if (success && mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Content saved successfully!'),
-                            backgroundColor: AppColors.success,
-                          ),
-                        );
-                        Navigator.pop(context);
-                        Navigator.pop(context); // Go back to generation screen too
-                      } else if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(reviewProvider.status == ReviewStatus.failed
-                                ? 'Failed to save content'
-                                : 'Saving...'),
-                          ),
-                        );
+                        if (success && mounted) {
+                          print('Save successful!'); // Debug log
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Content saved successfully!'),
+                              backgroundColor: AppColors.success,
+                            ),
+                          );
+                          Navigator.pop(context);
+                          Navigator.pop(context); // Go back to generation screen too
+                        } else if (mounted) {
+                          print('Save failed or not mounted. Status: ${reviewProvider.status}'); // Debug log
+                          if (reviewProvider.status == ReviewStatus.failed) {
+                            final errorMessage = reviewProvider.error ?? 'Failed to save content. Please try again.';
+                            print('Error: $errorMessage'); // Debug log
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(errorMessage),
+                                backgroundColor: AppColors.error,
+                                duration: const Duration(seconds: 5),
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e, st) {
+                        print('Exception in accept button: $e'); // Debug log
+                        print('Stack trace: $st'); // Debug log
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error: $e'),
+                              backgroundColor: AppColors.error,
+                              duration: const Duration(seconds: 5),
+                            ),
+                          );
+                        }
                       }
                     },
               style: ElevatedButton.styleFrom(
@@ -406,7 +488,7 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : Text(
-                      'Accept & Save',
+                      'Accept & Save (Status: ${reviewProvider.status})',
                       style: AppTextStyles.titleMedium.copyWith(color: Colors.white),
                     ),
             ),
@@ -416,7 +498,10 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
 
           // Reject with Feedback
           ExpansionTile(
-            title: const Text('Reject & Regenerate'),
+            title: Text(
+              'Reject & Regenerate',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            ),
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),

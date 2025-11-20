@@ -41,6 +41,7 @@ class DeckModel extends HiveObject {
   final String? description;
 
   @HiveField(3)
+  @JsonKey(name: 'cover_image_url')
   final String? coverImageUrl;
 
   @HiveField(4)
@@ -50,39 +51,51 @@ class DeckModel extends HiveObject {
   final DeckVisibility visibility;
 
   @HiveField(6)
+  @JsonKey(name: 'study_mode')
   final StudyMode studyMode;
 
   @HiveField(7)
+  @JsonKey(name: 'created_by')
   final String createdBy;
 
   @HiveField(8)
+  @JsonKey(name: 'created_at')
   final DateTime createdAt;
 
   @HiveField(9)
+  @JsonKey(name: 'updated_at')
   final DateTime updatedAt;
 
   @HiveField(10)
+  @JsonKey(name: 'total_cards')
   final int totalCards;
 
   @HiveField(11)
+  @JsonKey(name: 'studied_cards')
   final int studiedCards;
 
   @HiveField(12)
+  @JsonKey(name: 'mastered_cards')
   final int masteredCards;
 
   @HiveField(13)
+  @JsonKey(name: 'average_score')
   final double averageScore;
 
   @HiveField(14)
+  @JsonKey(name: 'total_study_time')
   final Duration totalStudyTime;
 
   @HiveField(15)
+  @JsonKey(name: 'last_studied_at')
   final DateTime? lastStudiedAt;
 
   @HiveField(16)
+  @JsonKey(name: 'is_bookmarked')
   final bool isBookmarked;
 
   @HiveField(17)
+  @JsonKey(name: 'bookmark_count')
   final int bookmarkCount;
 
   @HiveField(18)
@@ -98,15 +111,18 @@ class DeckModel extends HiveObject {
   final int difficulty; // 1-5 scale
 
   @HiveField(22)
+  @JsonKey(name: 'is_ai_generated')
   final bool isAIGenerated;
 
   @HiveField(23)
+  @JsonKey(name: 'source_file_url')
   final String? sourceFileUrl;
 
   @HiveField(24)
   final Map<String, dynamic>? metadata;
 
   @HiveField(25)
+  @JsonKey(name: 'course_id')
   final String? courseId;
 
   DeckModel({

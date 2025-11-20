@@ -11,6 +11,7 @@ import '../core/providers/course_material_provider.dart';
 import '../core/providers/settings_provider.dart';
 import '../core/providers/ai_generation_provider.dart';
 import '../core/providers/ai_review_provider.dart';
+import '../data/remote/supabase_client.dart';
 
 /// Main application widget with MaterialApp configuration
 class SmartFlashApp extends StatelessWidget {
@@ -94,6 +95,14 @@ class AppConfig {
 
   /// Initialize app-wide configurations
   static Future<void> initialize() async {
+    // Initialize SupabaseService
+    try {
+      await SupabaseService.instance.initialize();
+    } catch (e) {
+      // If Supabase is already initialized, that's fine
+      // The client getter will handle it
+    }
+
     // Set preferred orientations
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,

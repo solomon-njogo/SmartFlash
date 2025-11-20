@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 import '../providers/ai_generation_provider.dart';
 import '../../data/models/deck_model.dart';
 import '../../data/remote/supabase_client.dart';
@@ -6,24 +7,32 @@ import '../utils/logger.dart';
 
 /// Provider for managing AI content review workflow
 class AIReviewProvider extends ChangeNotifier {
+  static const _uuid = Uuid();
   AIReviewProvider({
     AIGenerationProvider? generationProvider,
     SupabaseService? supabaseService,
-  }) : _generationProvider = generationProvider ?? AIGenerationProvider(),
+  }) : _generationProvider = generationProvider,
        _supabaseService = SupabaseService.instance;
 
-  final AIGenerationProvider _generationProvider;
+  AIGenerationProvider? _generationProvider;
   final SupabaseService _supabaseService;
+
+  /// Set the generation provider (should be called from the UI with the shared instance)
+  void setGenerationProvider(AIGenerationProvider provider) {
+    _generationProvider = provider;
+  }
 
   // State
   ReviewStatus _status = ReviewStatus.idle;
   String? _feedback;
+  String? _error;
   List<int> _selectedFlashcardIndices = [];
   List<int> _selectedQuestionIndices = [];
 
   // Getters
   ReviewStatus get status => _status;
   String? get feedback => _feedback;
+  String? get error => _error;
   List<int> get selectedFlashcardIndices => _selectedFlashcardIndices;
   List<int> get selectedQuestionIndices => _selectedQuestionIndices;
 
@@ -34,7 +43,8 @@ class AIReviewProvider extends ChangeNotifier {
 
   /// Start review process
   void startReview() {
-    if (!_generationProvider.hasGeneratedContent) {
+    if (_generationProvider == null ||
+        !_generationProvider!.hasGeneratedContent) {
       return;
     }
     _status = ReviewStatus.reviewing;
@@ -71,7 +81,8 @@ class AIReviewProvider extends ChangeNotifier {
 
   /// Select all flashcards
   void selectAllFlashcards() {
-    final flashcards = _generationProvider.generatedFlashcards;
+    if (_generationProvider == null) return;
+    final flashcards = _generationProvider!.generatedFlashcards;
     if (flashcards != null) {
       _selectedFlashcardIndices = List.generate(flashcards.length, (i) => i);
       notifyListeners();
@@ -80,7 +91,8 @@ class AIReviewProvider extends ChangeNotifier {
 
   /// Select all questions
   void selectAllQuestions() {
-    final quiz = _generationProvider.generatedQuiz;
+    if (_generationProvider == null) return;
+    final quiz = _generationProvider!.generatedQuiz;
     if (quiz != null) {
       _selectedQuestionIndices = List.generate(quiz.questions.length, (i) => i);
       notifyListeners();
@@ -104,7 +116,13 @@ class AIReviewProvider extends ChangeNotifier {
       _status = ReviewStatus.saving;
       notifyListeners();
 
-      final flashcards = _generationProvider.generatedFlashcards;
+      if (_generationProvider == null) {
+        _status = ReviewStatus.idle;
+        _error = 'Generation provider not available. Please try again.';
+        notifyListeners();
+        return false;
+      }
+      final flashcards = _generationProvider!.generatedFlashcards;
       if (flashcards == null || flashcards.isEmpty) {
         _status = ReviewStatus.idle;
         notifyListeners();
@@ -128,9 +146,10 @@ class AIReviewProvider extends ChangeNotifier {
         );
       } catch (e) {
         // Create new deck if it doesn't exist
+        // Generate a proper UUID for the deck
         final now = DateTime.now();
         deck = DeckModel(
-          id: deckId,
+          id: _uuid.v4(), // Generate proper UUID
           name: deckName,
           description: 'AI-generated flashcards',
           createdBy: createdBy ?? '',
@@ -142,11 +161,9 @@ class AIReviewProvider extends ChangeNotifier {
       }
 
       // Save flashcards
-      final now = DateTime.now();
       for (final preview in flashcardsToSave) {
         final flashcard = preview.toFlashcardModel(
-          id:
-              '${deckId}_card_${now.millisecondsSinceEpoch}_${flashcardsToSave.indexOf(preview)}',
+          id: _uuid.v4(), // Generate proper UUID
           createdBy: createdBy,
         );
         await _supabaseService.createFlashcard(flashcard);
@@ -171,19 +188,51 @@ class AIReviewProvider extends ChangeNotifier {
   }
 
   /// Accept and save quiz
-  Future<bool> acceptQuiz({required String deckId, String? createdBy}) async {
+  Future<bool> acceptQuiz({
+    required String deckId,
+    required String deckName,
+    String? createdBy,
+  }) async {
     try {
+      Logger.info(
+        'Starting acceptQuiz with deckId: $deckId, deckName: $deckName',
+        tag: 'AIReviewProvider',
+      );
       _status = ReviewStatus.saving;
+      _error = null;
       notifyListeners();
 
-      final quizPreview = _generationProvider.generatedQuiz;
-      if (quizPreview == null || quizPreview.questions.isEmpty) {
+      if (_generationProvider == null) {
+        Logger.error('Generation provider is null', tag: 'AIReviewProvider');
         _status = ReviewStatus.idle;
+        _error = 'Generation provider not available. Please try again.';
+        notifyListeners();
+        return false;
+      }
+
+      final quizPreview = _generationProvider!.generatedQuiz;
+      Logger.info(
+        'Quiz preview: ${quizPreview != null ? "exists" : "null"}, Questions: ${quizPreview?.questions.length ?? 0}',
+        tag: 'AIReviewProvider',
+      );
+
+      if (quizPreview == null || quizPreview.questions.isEmpty) {
+        Logger.warning(
+          'Quiz preview is null or has no questions. Preview: ${quizPreview != null}, Questions: ${quizPreview?.questions.length ?? 0}',
+          tag: 'AIReviewProvider',
+        );
+        _status = ReviewStatus.idle;
+        _error = 'No quiz to save. Please generate a quiz first.';
         notifyListeners();
         return false;
       }
 
       // Filter selected questions if any are selected
+      Logger.info(
+        'Selected question indices: $_selectedQuestionIndices, Total questions: ${quizPreview.questions.length}',
+        tag: 'AIReviewProvider',
+      );
+
       final questionsToSave =
           _selectedQuestionIndices.isEmpty
               ? quizPreview.questions
@@ -191,15 +240,49 @@ class AIReviewProvider extends ChangeNotifier {
                   .map((i) => quizPreview.questions[i])
                   .toList();
 
+      Logger.info(
+        'Questions to save: ${questionsToSave.length}',
+        tag: 'AIReviewProvider',
+      );
+
       if (questionsToSave.isEmpty) {
+        Logger.warning(
+          'No questions to save after filtering',
+          tag: 'AIReviewProvider',
+        );
         _status = ReviewStatus.idle;
+        _error = 'No questions selected to save.';
         notifyListeners();
         return false;
       }
 
+      // Ensure deck exists
+      DeckModel? deck;
+      try {
+        // Try to get existing deck
+        final decks = await _supabaseService.getUserDecks(createdBy ?? '');
+        deck = decks.firstWhere(
+          (d) => d.id == deckId,
+          orElse: () => throw Exception(),
+        );
+      } catch (e) {
+        // Create new deck if it doesn't exist
+        // Generate a proper UUID for the deck
+        final now = DateTime.now();
+        deck = DeckModel(
+          id: _uuid.v4(), // Generate proper UUID
+          name: deckName,
+          description: 'AI-generated quiz deck',
+          createdBy: createdBy ?? '',
+          createdAt: now,
+          updatedAt: now,
+          isAIGenerated: true,
+        );
+        await _supabaseService.createDeck(deck);
+      }
+
       // Create quiz with selected questions
-      final now = DateTime.now();
-      final quizId = 'quiz_${now.millisecondsSinceEpoch}';
+      final quizId = _uuid.v4(); // Generate proper UUID
       final quizData = quizPreview.toQuizModels(
         quizId: quizId,
         createdBy: createdBy ?? '',
@@ -208,7 +291,13 @@ class AIReviewProvider extends ChangeNotifier {
       // Update quiz with filtered questions
       final filteredQuestions =
           questionsToSave.map((q) {
-            return q.toQuestionModel(quizId: quizId, createdBy: createdBy);
+            // Generate a proper UUID for each question
+            final questionId = _uuid.v4();
+            return q.toQuestionModel(
+              quizId: quizId,
+              createdBy: createdBy,
+              questionId: questionId,
+            );
           }).toList();
 
       final totalPoints = filteredQuestions.fold<int>(
@@ -230,6 +319,7 @@ class AIReviewProvider extends ChangeNotifier {
       }
 
       _status = ReviewStatus.completed;
+      _error = null;
       notifyListeners();
       return true;
     } catch (e, st) {
@@ -240,6 +330,7 @@ class AIReviewProvider extends ChangeNotifier {
         stackTrace: st,
       );
       _status = ReviewStatus.failed;
+      _error = e.toString();
       notifyListeners();
       return false;
     }
@@ -255,7 +346,13 @@ class AIReviewProvider extends ChangeNotifier {
       _status = ReviewStatus.regenerating;
       notifyListeners();
 
-      await _generationProvider.regenerateWithFeedback(_feedback!);
+      if (_generationProvider == null) {
+        _status = ReviewStatus.failed;
+        _error = 'Generation provider not available.';
+        notifyListeners();
+        return;
+      }
+      await _generationProvider!.regenerateWithFeedback(_feedback!);
 
       _status = ReviewStatus.reviewing;
       _feedback = null;
@@ -278,6 +375,7 @@ class AIReviewProvider extends ChangeNotifier {
   void reset() {
     _status = ReviewStatus.idle;
     _feedback = null;
+    _error = null;
     _selectedFlashcardIndices.clear();
     _selectedQuestionIndices.clear();
     notifyListeners();
