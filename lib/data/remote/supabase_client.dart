@@ -5,6 +5,8 @@ import '../../core/utils/logger.dart';
 import '../models/user_model.dart';
 import '../models/flashcard_model.dart';
 import '../models/deck_model.dart';
+import '../models/quiz_model.dart';
+import '../models/question_model.dart';
 
 /// Service for managing Supabase remote database operations
 class SupabaseService {
@@ -248,37 +250,6 @@ class SupabaseService {
     }
   }
 
-  /// Get public decks
-  Future<List<DeckModel>> getPublicDecks({
-    int limit = 20,
-    int offset = 0,
-    String? searchQuery,
-  }) async {
-    try {
-      Logger.info('Getting public decks');
-
-      var query = client
-          .from('decks')
-          .select()
-          .eq('visibility', 'public')
-          .order('bookmark_count', ascending: false)
-          .range(offset, offset + limit - 1);
-
-      // Note: Search functionality can be implemented with text search
-      // For now, basic filtering is done client-side if needed
-
-      final response = await query;
-
-      Logger.info('Public decks retrieved successfully');
-      return response
-          .map<DeckModel>((json) => DeckModel.fromJson(json))
-          .toList();
-    } catch (e) {
-      Logger.error('Failed to get public decks: $e');
-      rethrow;
-    }
-  }
-
   /// Create a new flashcard
   Future<FlashcardModel> createFlashcard(FlashcardModel flashcard) async {
     try {
@@ -365,6 +336,42 @@ class SupabaseService {
       Logger.info('Flashcard deleted successfully');
     } catch (e) {
       Logger.error('Failed to delete flashcard: $e');
+      rethrow;
+    }
+  }
+
+  /// Create a new quiz
+  Future<QuizModel> createQuiz(QuizModel quiz) async {
+    try {
+      Logger.info('Creating quiz: ${quiz.id}');
+
+      final response =
+          await client.from('quizzes').insert(quiz.toJson()).select().single();
+
+      Logger.info('Quiz created successfully');
+      return QuizModel.fromJson(response);
+    } catch (e) {
+      Logger.error('Failed to create quiz: $e');
+      rethrow;
+    }
+  }
+
+  /// Create a new question
+  Future<QuestionModel> createQuestion(QuestionModel question) async {
+    try {
+      Logger.info('Creating question: ${question.id}');
+
+      final response =
+          await client
+              .from('questions')
+              .insert(question.toJson())
+              .select()
+              .single();
+
+      Logger.info('Question created successfully');
+      return QuestionModel.fromJson(response);
+    } catch (e) {
+      Logger.error('Failed to create question: $e');
       rethrow;
     }
   }

@@ -520,7 +520,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             'This course doesn\'t have any quizzes yet.',
             'Create Quiz',
             () {
-              // TODO: Navigate to create quiz
+              AppNavigation.goAIGeneration(context);
             },
           );
         }

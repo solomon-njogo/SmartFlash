@@ -428,7 +428,7 @@ class _CreateBottomSheet extends StatelessWidget {
               subtitle: 'Create quizzes to test knowledge',
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Navigate to create quiz
+                AppNavigation.goAIGeneration(context);
               },
             ),
             const SizedBox(height: 24),

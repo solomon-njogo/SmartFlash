@@ -9,6 +9,8 @@ import '../core/providers/quiz_provider.dart';
 import '../core/providers/course_provider.dart';
 import '../core/providers/course_material_provider.dart';
 import '../core/providers/settings_provider.dart';
+import '../core/providers/ai_generation_provider.dart';
+import '../core/providers/ai_review_provider.dart';
 
 /// Main application widget with MaterialApp configuration
 class SmartFlashApp extends StatelessWidget {
@@ -25,6 +27,8 @@ class SmartFlashApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CourseMaterialProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => AIGenerationProvider()),
+        ChangeNotifierProvider(create: (_) => AIReviewProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

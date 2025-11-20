@@ -13,6 +13,8 @@ import '../features/course/views/edit_course_screen.dart' as feature_course_edit
 import 'screens/other_screens.dart';
 import '../features/materials/views/upload_materials_screen.dart';
 import '../features/materials/views/material_preview_screen.dart';
+import '../features/ai/views/ai_generation_screen.dart';
+import '../features/ai/views/ai_content_review_screen.dart';
 
 /// App router configuration using GoRouter
 class AppRouter {
@@ -181,6 +183,16 @@ class AppRouter {
           return MaterialPreviewScreen(materialId: materialId);
         },
       ),
+      GoRoute(
+        path: '/ai-generation',
+        name: 'aiGeneration',
+        builder: (context, state) => const AIGenerationScreen(),
+      ),
+      GoRoute(
+        path: '/ai-review',
+        name: 'aiReview',
+        builder: (context, state) => const AIContentReviewScreen(),
+      ),
     ],
     errorBuilder: (context, state) => const NotFoundScreen(),
   );
@@ -338,6 +350,16 @@ class AppNavigation {
   /// Navigate to material preview
   static void goMaterialPreview(BuildContext context, String materialId) {
     push(context, '/material-preview/$materialId');
+  }
+
+  /// Navigate to AI generation
+  static void goAIGeneration(BuildContext context) {
+    push(context, '/ai-generation');
+  }
+
+  /// Navigate to AI review
+  static void goAIReview(BuildContext context) {
+    push(context, '/ai-review');
   }
 }
 

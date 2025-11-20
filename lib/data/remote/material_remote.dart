@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/course_material_model.dart';
 import '../../core/utils/logger.dart';
 import 'profile_remote.dart';
+import 'document_text_remote.dart';
 
 /// Remote data source for persisting course materials to Supabase
 class MaterialRemoteDataSource {
@@ -106,6 +107,9 @@ class MaterialRemoteDataSource {
         'Inserted material ${material.id} into Supabase',
         tag: 'Database',
       );
+
+      // Text extraction is now handled client-side via MaterialUploadService
+      // No edge function trigger needed
 
       // Return with ensured file_url
       return insertedMap..putIfAbsent('file_url', () => fileUrl);

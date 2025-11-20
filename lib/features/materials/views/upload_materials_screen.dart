@@ -184,7 +184,7 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
           fileBytes = f.bytes;
         }
 
-        setState(() => _statusByName[f.name] = 'Uploading...');
+        setState(() => _statusByName[f.name] = 'Processing...');
 
         final ok = await materials.createMaterial(
           model,
@@ -193,8 +193,15 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
             if (mounted) {
               setState(() {
                 _progressByName[f.name] = progress;
-                _statusByName[f.name] =
-                    'Uploading ${(progress * 100).toStringAsFixed(0)}%';
+                // Show combined progress for upload and extraction
+                final progressPercent = (progress * 100).toStringAsFixed(0);
+                if (progress < 0.7) {
+                  _statusByName[f.name] = 'Uploading $progressPercent%';
+                } else if (progress < 0.9) {
+                  _statusByName[f.name] = 'Extracting text $progressPercent%';
+                } else {
+                  _statusByName[f.name] = 'Finalizing $progressPercent%';
+                }
               });
             }
           },

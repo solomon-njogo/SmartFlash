@@ -35,6 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   http: ^1.5.0
+  dio: ^5.4.0
   connectivity_plus: ^7.0.0
   intl: ^0.20.2
   flutter_dotenv: ^5.1.0
@@ -58,6 +59,11 @@ dependencies:
   open_filex: ^4.3.2
   permission_handler: ^11.1.0
   url_launcher: ^6.2.2
+  
+  # Text extraction
+  syncfusion_flutter_pdf: ^28.1.36
+  archive: ^3.4.10
+  xml: ^6.5.0
 
 dev_dependencies:
   flutter_test:
