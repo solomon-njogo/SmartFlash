@@ -21,6 +21,9 @@ import '../features/deck/views/flashcard_edit_screen.dart';
 import '../features/deck/views/flashcard_review_screen.dart';
 import '../features/deck/views/deck_attempt_results_screen.dart';
 import '../data/models/deck_attempt_model.dart';
+import '../features/quiz/views/quiz_taking_screen.dart';
+import '../features/quiz/views/quiz_results_screen.dart';
+import '../data/models/quiz_attempt_model.dart';
 
 /// App router configuration using GoRouter
 class AppRouter {
@@ -246,6 +249,28 @@ class AppRouter {
         name: 'aiReview',
         builder: (context, state) => const AIContentReviewScreen(),
       ),
+      GoRoute(
+        path: '/quiz-taking/:quizId',
+        name: 'quizTaking',
+        builder: (context, state) {
+          final quizId = state.pathParameters['quizId']!;
+          return QuizTakingScreen(quizId: quizId);
+        },
+      ),
+      GoRoute(
+        path: '/quiz-results',
+        name: 'quizResults',
+        builder: (context, state) {
+          final attempt = state.extra as QuizAttemptModel?;
+          if (attempt == null) {
+            // If no attempt provided, navigate back
+            return const Scaffold(
+              body: Center(child: Text('No attempt data provided')),
+            );
+          }
+          return QuizResultsScreen(attempt: attempt);
+        },
+      ),
     ],
     errorBuilder: (context, state) => const NotFoundScreen(),
   );
@@ -371,6 +396,19 @@ class AppNavigation {
   /// Navigate to study session
   static void goStudySession(BuildContext context, String deckId) {
     push(context, '/study-session/$deckId');
+  }
+
+  /// Navigate to quiz taking screen
+  static void goQuizTaking(BuildContext context, String quizId) {
+    push(context, '/quiz-taking/$quizId');
+  }
+
+  /// Navigate to quiz results screen
+  static void goQuizResults(
+    BuildContext context,
+    QuizAttemptModel attempt,
+  ) {
+    push(context, '/quiz-results', extra: attempt);
   }
 
   /// Navigate to study results

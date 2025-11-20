@@ -9,6 +9,8 @@ import '../models/quiz_model.dart';
 import '../models/question_model.dart';
 import '../models/deck_attempt_model.dart';
 import '../models/deck_attempt_card_result.dart';
+import '../models/quiz_attempt_model.dart';
+import '../models/quiz_attempt_answer_model.dart';
 
 /// Service for managing Supabase remote database operations
 class SupabaseService {
@@ -592,6 +594,168 @@ class SupabaseService {
           .toList();
     } catch (e) {
       Logger.error('Failed to get card results: $e');
+      rethrow;
+    }
+  }
+
+  /// Create a new quiz attempt
+  Future<QuizAttemptModel> createQuizAttempt(QuizAttemptModel attempt) async {
+    try {
+      Logger.info('Creating quiz attempt: ${attempt.id}');
+
+      final response =
+          await client
+              .from('quiz_attempts')
+              .insert(attempt.toDatabaseJson())
+              .select()
+              .single();
+
+      Logger.info('Quiz attempt created successfully');
+      return QuizAttemptModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to create quiz attempt: $e');
+      rethrow;
+    }
+  }
+
+  /// Update quiz attempt
+  Future<QuizAttemptModel> updateQuizAttempt(QuizAttemptModel attempt) async {
+    try {
+      Logger.info('Updating quiz attempt: ${attempt.id}');
+
+      final response =
+          await client
+              .from('quiz_attempts')
+              .update(attempt.toDatabaseJson())
+              .eq('id', attempt.id)
+              .select()
+              .single();
+
+      Logger.info('Quiz attempt updated successfully');
+      return QuizAttemptModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to update quiz attempt: $e');
+      rethrow;
+    }
+  }
+
+  /// Get quiz attempts for a user
+  Future<List<QuizAttemptModel>> getUserQuizAttempts(String userId) async {
+    try {
+      Logger.info('Getting quiz attempts for user: $userId');
+
+      final response = await client
+          .from('quiz_attempts')
+          .select()
+          .eq('user_id', userId)
+          .order('started_at', ascending: false);
+
+      Logger.info('User quiz attempts retrieved successfully');
+      return response
+          .map<QuizAttemptModel>(
+            (json) => QuizAttemptModel.fromDatabaseJson(json),
+          )
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get user quiz attempts: $e');
+      rethrow;
+    }
+  }
+
+  /// Get quiz attempts for a quiz
+  Future<List<QuizAttemptModel>> getQuizAttempts(String quizId) async {
+    try {
+      Logger.info('Getting quiz attempts for quiz: $quizId');
+
+      final response = await client
+          .from('quiz_attempts')
+          .select()
+          .eq('quiz_id', quizId)
+          .order('started_at', ascending: false);
+
+      Logger.info('Quiz attempts retrieved successfully');
+      return response
+          .map<QuizAttemptModel>(
+            (json) => QuizAttemptModel.fromDatabaseJson(json),
+          )
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get quiz attempts: $e');
+      rethrow;
+    }
+  }
+
+  /// Get next quiz attempt number
+  Future<int> getNextQuizAttemptNumber(String quizId, String userId) async {
+    try {
+      Logger.info(
+        'Getting next attempt number for quiz: $quizId, user: $userId',
+      );
+
+      final response = await client
+          .from('quiz_attempts')
+          .select('attempt_number')
+          .eq('quiz_id', quizId)
+          .eq('user_id', userId)
+          .order('attempt_number', ascending: false)
+          .limit(1);
+
+      if (response.isEmpty) {
+        return 1;
+      }
+
+      final lastAttemptNumber = response[0]['attempt_number'] as int;
+      return lastAttemptNumber + 1;
+    } catch (e) {
+      Logger.error('Failed to get next quiz attempt number: $e');
+      // Return 1 as default if query fails
+      return 1;
+    }
+  }
+
+  /// Save answer for a quiz attempt
+  Future<QuizAttemptAnswerModel> saveQuizAnswer(
+    QuizAttemptAnswerModel answer,
+  ) async {
+    try {
+      Logger.info('Saving quiz answer: ${answer.id}');
+
+      final response =
+          await client
+              .from('quiz_attempt_answers')
+              .insert(answer.toDatabaseJson())
+              .select()
+              .single();
+
+      Logger.info('Quiz answer saved successfully');
+      return QuizAttemptAnswerModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to save quiz answer: $e');
+      rethrow;
+    }
+  }
+
+  /// Get answers for a quiz attempt
+  Future<List<QuizAttemptAnswerModel>> getAttemptAnswers(
+    String attemptId,
+  ) async {
+    try {
+      Logger.info('Getting answers for attempt: $attemptId');
+
+      final response = await client
+          .from('quiz_attempt_answers')
+          .select()
+          .eq('attempt_id', attemptId)
+          .order('order', ascending: true);
+
+      Logger.info('Attempt answers retrieved successfully');
+      return response
+          .map<QuizAttemptAnswerModel>(
+            (json) => QuizAttemptAnswerModel.fromDatabaseJson(json),
+          )
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get attempt answers: $e');
       rethrow;
     }
   }

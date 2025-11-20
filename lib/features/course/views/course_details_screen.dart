@@ -757,8 +757,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                           ],
                     ),
                     onTap: () {
-                      quizProvider.startQuiz(quiz.id);
-                      // TODO: Navigate to quiz screen
+                      AppNavigation.goQuizTaking(context, quiz.id);
                     },
                   ),
                 );
