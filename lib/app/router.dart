@@ -8,8 +8,8 @@ import '../features/home/views/home_screen.dart';
 import '../features/auth/views/profile_screen.dart';
 import '../features/course/views/course_details_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/course_screens.dart';
 import '../features/course/views/create_course_screen.dart' as feature_course;
+import '../features/course/views/edit_course_screen.dart' as feature_course_edit;
 import 'screens/other_screens.dart';
 import '../features/materials/views/upload_materials_screen.dart';
 
@@ -95,7 +95,7 @@ class AppRouter {
         name: 'editCourse',
         builder: (context, state) {
           final courseId = state.pathParameters['courseId']!;
-          return EditCourseScreen(courseId: courseId);
+          return feature_course_edit.EditCourseScreen(courseId: courseId);
         },
       ),
 

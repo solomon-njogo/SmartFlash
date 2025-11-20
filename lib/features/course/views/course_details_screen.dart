@@ -76,9 +76,13 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              // TODO: Implement edit course
-            },
+            onPressed:
+                _course == null
+                    ? null
+                    : () => AppNavigation.goEditCourse(
+                      context,
+                      _course!.id,
+                    ),
             icon: Icon(Icons.edit, color: colorScheme.onSurface),
           ),
         ],

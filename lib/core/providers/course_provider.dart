@@ -81,13 +81,29 @@ class CourseProvider extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
-      final index = _courses.indexWhere((c) => c.id == course.id);
+      Logger.logUserAction(
+        'UpdateCourse:start',
+        data: {'id': course.id, 'name': course.name},
+      );
+      final updatedCourse = await _remote.updateCourse(course);
+
+      final index = _courses.indexWhere((c) => c.id == updatedCourse.id);
       if (index != -1) {
-        _courses[index] = course;
-        notifyListeners();
+        _courses[index] = updatedCourse;
+      } else {
+        _courses.add(updatedCourse);
       }
+      if (_selectedCourse?.id == updatedCourse.id) {
+        _selectedCourse = updatedCourse;
+      }
+      notifyListeners();
+      Logger.logUserAction(
+        'UpdateCourse:success',
+        data: {'id': updatedCourse.id},
+      );
       return true;
-    } catch (e) {
+    } catch (e, st) {
+      Logger.logException(e, st, context: 'CourseProvider.updateCourse');
       _setError(e.toString());
       return false;
     } finally {
@@ -101,10 +117,18 @@ class CourseProvider extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
+      Logger.logUserAction('DeleteCourse:start', data: {'id': courseId});
+      await _remote.deleteCourse(courseId);
+
       _courses.removeWhere((course) => course.id == courseId);
+      if (_selectedCourse?.id == courseId) {
+        _selectedCourse = null;
+      }
       notifyListeners();
+      Logger.logUserAction('DeleteCourse:success', data: {'id': courseId});
       return true;
-    } catch (e) {
+    } catch (e, st) {
+      Logger.logException(e, st, context: 'CourseProvider.deleteCourse');
       _setError(e.toString());
       return false;
     } finally {

@@ -83,59 +83,12 @@ class CourseRemoteDataSource {
       if (response == null) return [];
 
       final List<CourseModel> courses =
-          response.map((raw) {
-            final Map<String, dynamic> row = Map<String, dynamic>.from(
-              raw as Map,
-            );
-
-            // Normalize DB (snake_case) keys to the model's camelCase JSON mapping
-            final Map<String, dynamic> json = {
-              'id': row['id'],
-              'name': row['name'],
-              'description': row['description'],
-              'coverImageUrl': row['cover_image_url'] ?? row['coverImageUrl'],
-              'iconName': row['icon_name'] ?? row['iconName'],
-              'colorValue':
-                  row['color_value'] ?? row['colorValue'] ?? 0xFF2196F3,
-              'deckIds':
-                  (row['deck_ids'] ?? row['deckIds'] ?? []) is List
-                      ? List<String>.from(
-                        row['deck_ids'] ?? row['deckIds'] ?? [],
-                      )
-                      : <String>[],
-              'quizIds':
-                  (row['quiz_ids'] ?? row['quizIds'] ?? []) is List
-                      ? List<String>.from(
-                        row['quiz_ids'] ?? row['quizIds'] ?? [],
-                      )
-                      : <String>[],
-              'materialIds':
-                  (row['material_ids'] ?? row['materialIds'] ?? []) is List
-                      ? List<String>.from(
-                        row['material_ids'] ?? row['materialIds'] ?? [],
-                      )
-                      : <String>[],
-              'createdBy': row['created_by'] ?? row['createdBy'] ?? '',
-              'createdAt': (row['created_at'] ?? row['createdAt'])?.toString(),
-              'updatedAt': (row['updated_at'] ?? row['updatedAt'])?.toString(),
-              'tags':
-                  (row['tags'] ?? row['tags'] ?? []) is List
-                      ? List<String>.from(row['tags'] ?? [])
-                      : <String>[],
-              'category': row['category'],
-              'subject': row['subject'],
-              'totalDecks': row['total_decks'] ?? row['totalDecks'] ?? 0,
-              'totalQuizzes': row['total_quizzes'] ?? row['totalQuizzes'] ?? 0,
-              'totalMaterials':
-                  row['total_materials'] ?? row['totalMaterials'] ?? 0,
-              'lastAccessedAt':
-                  (row['last_accessed_at'] ?? row['lastAccessedAt'])
-                      ?.toString(),
-              'metadata': row['metadata'],
-            };
-
-            return CourseModel.fromJson(json);
-          }).toList();
+          response
+              .map(
+                (raw) =>
+                    _mapRowToCourseModel(Map<String, dynamic>.from(raw as Map)),
+              )
+              .toList();
 
       Logger.logDatabase('SELECT', 'courses', data: {'count': courses.length});
       return courses;
@@ -156,5 +109,138 @@ class CourseRemoteDataSource {
       );
       rethrow;
     }
+  }
+
+  /// Update an existing course row and return the updated model
+  Future<CourseModel> updateCourse(CourseModel course) async {
+    final String? userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('Not authenticated');
+    }
+
+    final Map<String, dynamic> updates = {
+      'name': course.name,
+      'description': course.description,
+      'cover_image_url': course.coverImageUrl,
+      'icon_name': course.iconName,
+      'color_value': course.colorValue,
+      'deck_ids': course.deckIds,
+      'quiz_ids': course.quizIds,
+      'material_ids': course.materialIds,
+      'tags': course.tags,
+      'category': course.category,
+      'subject': course.subject,
+      'total_decks': course.totalDecks,
+      'total_quizzes': course.totalQuizzes,
+      'total_materials': course.totalMaterials,
+      'last_accessed_at': course.lastAccessedAt?.toIso8601String(),
+      'metadata': course.metadata,
+      'updated_at': course.updatedAt.toIso8601String(),
+    };
+
+    Logger.logDatabase('UPDATE', 'courses', data: {'id': course.id});
+    try {
+      final response =
+          await _client
+              .from('courses')
+              .update(updates)
+              .eq('id', course.id)
+              .eq('created_by', userId)
+              .select()
+              .single();
+
+      return _mapRowToCourseModel(Map<String, dynamic>.from(response as Map));
+    } on PostgrestException catch (e, st) {
+      Logger.error(
+        'PostgrestException updating course: ${e.message}',
+        tag: 'Database',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    } catch (e, st) {
+      Logger.error(
+        'Unknown error updating course',
+        tag: 'Database',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    }
+  }
+
+  /// Delete a course row
+  Future<void> deleteCourse(String courseId) async {
+    final String? userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('Not authenticated');
+    }
+
+    Logger.logDatabase('DELETE', 'courses', data: {'id': courseId});
+    try {
+      await _client
+          .from('courses')
+          .delete()
+          .eq('id', courseId)
+          .eq('created_by', userId);
+    } on PostgrestException catch (e, st) {
+      Logger.error(
+        'PostgrestException deleting course: ${e.message}',
+        tag: 'Database',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    } catch (e, st) {
+      Logger.error(
+        'Unknown error deleting course',
+        tag: 'Database',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    }
+  }
+
+  CourseModel _mapRowToCourseModel(Map<String, dynamic> row) {
+    final Map<String, dynamic> json = {
+      'id': row['id'],
+      'name': row['name'],
+      'description': row['description'],
+      'coverImageUrl': row['cover_image_url'] ?? row['coverImageUrl'],
+      'iconName': row['icon_name'] ?? row['iconName'],
+      'colorValue': row['color_value'] ?? row['colorValue'] ?? 0xFF2196F3,
+      'deckIds':
+          (row['deck_ids'] ?? row['deckIds'] ?? []) is List
+              ? List<String>.from(row['deck_ids'] ?? row['deckIds'] ?? [])
+              : <String>[],
+      'quizIds':
+          (row['quiz_ids'] ?? row['quizIds'] ?? []) is List
+              ? List<String>.from(row['quiz_ids'] ?? row['quizIds'] ?? [])
+              : <String>[],
+      'materialIds':
+          (row['material_ids'] ?? row['materialIds'] ?? []) is List
+              ? List<String>.from(
+                row['material_ids'] ?? row['materialIds'] ?? [],
+              )
+              : <String>[],
+      'createdBy': row['created_by'] ?? row['createdBy'] ?? '',
+      'createdAt': (row['created_at'] ?? row['createdAt'])?.toString(),
+      'updatedAt': (row['updated_at'] ?? row['updatedAt'])?.toString(),
+      'tags':
+          (row['tags'] ?? row['tags'] ?? []) is List
+              ? List<String>.from(row['tags'] ?? [])
+              : <String>[],
+      'category': row['category'],
+      'subject': row['subject'],
+      'totalDecks': row['total_decks'] ?? row['totalDecks'] ?? 0,
+      'totalQuizzes': row['total_quizzes'] ?? row['totalQuizzes'] ?? 0,
+      'totalMaterials': row['total_materials'] ?? row['totalMaterials'] ?? 0,
+      'lastAccessedAt':
+          (row['last_accessed_at'] ?? row['lastAccessedAt'])?.toString(),
+      'metadata': row['metadata'],
+    };
+
+    return CourseModel.fromJson(json);
   }
 }
