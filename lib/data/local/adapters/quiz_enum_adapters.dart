@@ -1,6 +1,5 @@
 import 'package:hive/hive.dart';
 import '../../models/question_model.dart';
-import '../../models/quiz_model.dart';
 import '../../models/quiz_result_model.dart';
 
 /// Hive adapter for QuestionType enum
@@ -48,40 +47,8 @@ class QuestionTypeAdapter extends TypeAdapter<QuestionType> {
   }
 }
 
-/// Hive adapter for QuizStatus enum
-class QuizStatusAdapter extends TypeAdapter<QuizStatus> {
-  @override
-  final int typeId = 21;
-
-  @override
-  QuizStatus read(BinaryReader reader) {
-    switch (reader.readByte()) {
-      case 0:
-        return QuizStatus.draft;
-      case 1:
-        return QuizStatus.published;
-      case 2:
-        return QuizStatus.archived;
-      default:
-        return QuizStatus.draft;
-    }
-  }
-
-  @override
-  void write(BinaryWriter writer, QuizStatus obj) {
-    switch (obj) {
-      case QuizStatus.draft:
-        writer.writeByte(0);
-        break;
-      case QuizStatus.published:
-        writer.writeByte(1);
-        break;
-      case QuizStatus.archived:
-        writer.writeByte(2);
-        break;
-    }
-  }
-}
+// QuizStatus enum has been removed from the model as it's not in the database schema
+// The QuizStatusAdapter is no longer needed
 
 /// Hive adapter for QuizResultStatus enum
 class QuizResultStatusAdapter extends TypeAdapter<QuizResultStatus> {

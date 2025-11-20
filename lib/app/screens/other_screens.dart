@@ -1,18 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Create deck screen for adding new flashcard decks
-class CreateDeckScreen extends StatelessWidget {
-  const CreateDeckScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Create Deck')),
-      body: const Center(child: Text('Create Deck Screen - Coming Soon')),
-    );
-  }
-}
-
 /// Edit deck screen for modifying existing decks
 class EditDeckScreen extends StatelessWidget {
   final String deckId;
@@ -24,21 +11,6 @@ class EditDeckScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Deck')),
       body: Center(child: Text('Edit Deck Screen - Deck ID: $deckId')),
-    );
-  }
-}
-
-/// Deck details screen for viewing deck information
-class DeckDetailsScreen extends StatelessWidget {
-  final String deckId;
-
-  const DeckDetailsScreen({super.key, required this.deckId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Deck Details')),
-      body: Center(child: Text('Deck Details Screen - Deck ID: $deckId')),
     );
   }
 }

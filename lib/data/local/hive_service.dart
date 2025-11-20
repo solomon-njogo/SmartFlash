@@ -71,7 +71,7 @@ class HiveService {
       Hive.registerAdapter(DeckVisibilityAdapter());
       Hive.registerAdapter(StudyModeAdapter());
       Hive.registerAdapter(quiz_enum_adapters.QuestionTypeAdapter());
-      Hive.registerAdapter(quiz_enum_adapters.QuizStatusAdapter());
+      // QuizStatusAdapter removed - QuizStatus enum no longer exists
       Hive.registerAdapter(quiz_enum_adapters.QuizResultStatusAdapter());
       Hive.registerAdapter(quiz_enum_adapters.QuestionResultAdapter());
 

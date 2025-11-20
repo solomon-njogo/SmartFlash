@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/providers/course_provider.dart';
 import '../../../core/providers/course_material_provider.dart';
+import '../../../core/providers/deck_provider.dart';
 import '../../../app/router.dart';
 import '../../../app/theme/app_name.dart';
 import '../../../app/app_text_styles.dart';
@@ -198,11 +199,13 @@ class HomeScreen extends StatelessWidget {
     CourseProvider courseProvider,
   ) {
     final materialProvider = Provider.of<CourseMaterialProvider>(context, listen: false);
+    final deckProvider = Provider.of<DeckProvider>(context, listen: false);
     return RefreshIndicator(
       onRefresh: () async {
         await Future.wait([
           courseProvider.refreshCourses(),
           materialProvider.refreshMaterials(),
+          deckProvider.refreshDecks(),
         ]);
       },
       child: ListView.builder(
@@ -428,7 +431,7 @@ class _CreateBottomSheet extends StatelessWidget {
               subtitle: 'Create quizzes to test knowledge',
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Navigate to create quiz
+                AppNavigation.goAIGeneration(context);
               },
             ),
             const SizedBox(height: 24),

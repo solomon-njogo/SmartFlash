@@ -29,26 +29,46 @@ class MaterialRemoteDataSource {
     Uint8List? fileBytes,
     Function(double)? onProgress,
   }) async {
+    Logger.info(
+      '=== Starting storage upload and database insert ===',
+      tag: 'Storage',
+    );
+    
     final String? userId = _client.auth.currentUser?.id;
     if (userId == null) {
+      Logger.error('Not authenticated - cannot upload material', tag: 'Storage');
       throw Exception('Not authenticated');
     }
 
+    Logger.debug('Authenticated user ID: $userId', tag: 'Storage');
+
     // Ensure profile exists to satisfy RLS foreign keys
+    Logger.debug('Ensuring profile exists for RLS foreign keys...', tag: 'Storage');
     await ProfileRemoteDataSource(client: _client).ensureCurrentProfile();
+    Logger.debug('Profile check completed', tag: 'Storage');
 
     final String storagePath =
         'courses/${material.courseId}/${material.id}/${material.name}';
 
+    Logger.info(
+      'Storage path: $storagePath, Bucket: $_bucketName',
+      tag: 'Storage',
+    );
+
     try {
       Logger.info(
-        'Uploading material to storage: $storagePath',
+        'Uploading file to storage bucket: $_bucketName',
         tag: 'Storage',
       );
+      final storageUploadStartTime = DateTime.now();
 
       // Handle file upload - support both path (mobile/desktop) and bytes (web)
       if (fileBytes != null) {
         // Web platform - upload from bytes
+        Logger.info(
+          'Uploading from bytes (web platform) - Size: ${fileBytes.length} bytes',
+          tag: 'Storage',
+        );
         await _client.storage
             .from(_bucketName)
             .uploadBinary(
@@ -56,12 +76,29 @@ class MaterialRemoteDataSource {
               fileBytes,
               fileOptions: const FileOptions(upsert: true),
             );
+        Logger.info(
+          'File bytes uploaded successfully to storage',
+          tag: 'Storage',
+        );
       } else if (material.filePath != null && material.filePath!.isNotEmpty) {
         // Mobile/Desktop platform - upload from file path
+        Logger.info(
+          'Uploading from file path (mobile/desktop platform) - Path: ${material.filePath}',
+          tag: 'Storage',
+        );
         final File file = File(material.filePath!);
         if (!await file.exists()) {
+          Logger.error(
+            'File does not exist at path: ${material.filePath}',
+            tag: 'Storage',
+          );
           throw Exception('File does not exist at path: ${material.filePath}');
         }
+        final fileSize = await file.length();
+        Logger.debug(
+          'File exists, size: $fileSize bytes',
+          tag: 'Storage',
+        );
         await _client.storage
             .from(_bucketName)
             .upload(
@@ -69,15 +106,38 @@ class MaterialRemoteDataSource {
               file,
               fileOptions: const FileOptions(upsert: true),
             );
+        Logger.info(
+          'File uploaded successfully to storage from path',
+          tag: 'Storage',
+        );
       } else {
+        Logger.error(
+          'Neither file path nor file bytes provided - cannot upload',
+          tag: 'Storage',
+        );
         throw Exception('Either file path or file bytes must be provided');
       }
+      
+      final storageUploadDuration = DateTime.now().difference(storageUploadStartTime);
+      Logger.info(
+        'Storage upload completed in ${storageUploadDuration.inMilliseconds}ms',
+        tag: 'Storage',
+      );
 
       // Get a public URL (assuming bucket is public). If private, generate a signed URL instead.
+      Logger.debug('Generating public URL for uploaded file...', tag: 'Storage');
       final String fileUrl = _client.storage
           .from(_bucketName)
           .getPublicUrl(storagePath);
+      Logger.info(
+        'Generated file URL: $fileUrl',
+        tag: 'Storage',
+      );
 
+      Logger.info(
+        'Preparing database insert for material metadata...',
+        tag: 'Database',
+      );
       final Map<String, dynamic> row = {
         'id': material.id,
         'course_id': material.courseId,
@@ -96,25 +156,49 @@ class MaterialRemoteDataSource {
         'last_accessed_at': material.lastAccessedAt?.toIso8601String(),
       };
 
+      Logger.debug(
+        'Database row data - ID: ${row['id']}, Course: ${row['course_id']}, Name: ${row['name']}, Type: ${row['file_type']}, Size: ${row['file_size_bytes']} bytes',
+        tag: 'Database',
+      );
       Logger.logDatabase('INSERT', _tableName, data: row);
+      
+      final dbInsertStartTime = DateTime.now();
       final inserted =
           await _client.from(_tableName).insert(row).select().single();
+      final dbInsertDuration = DateTime.now().difference(dbInsertStartTime);
+      
       final Map<String, dynamic> insertedMap = Map<String, dynamic>.from(
         inserted,
       );
       Logger.info(
-        'Inserted material ${material.id} into Supabase',
+        'Material inserted into database in ${dbInsertDuration.inMilliseconds}ms',
+        tag: 'Database',
+      );
+      Logger.info(
+        'Inserted material record - ID: ${insertedMap['id']}, Table: $_tableName',
         tag: 'Database',
       );
 
+      // Text extraction is now handled client-side via MaterialUploadService
+      // No edge function trigger needed
+
       // Return with ensured file_url
-      return insertedMap..putIfAbsent('file_url', () => fileUrl);
+      final result = insertedMap..putIfAbsent('file_url', () => fileUrl);
+      Logger.info(
+        '=== Storage upload and database insert completed successfully ===',
+        tag: 'Storage',
+      );
+      return result;
     } on StorageException catch (e, st) {
       Logger.error(
         'StorageException uploading material: ${e.message}',
         tag: 'Storage',
         error: e,
         stackTrace: st,
+      );
+      Logger.error(
+        'Storage error details - Code: ${e.statusCode}, Message: ${e.message}',
+        tag: 'Storage',
       );
       throw Exception('Storage error: ${e.message}');
     } on PostgrestException catch (e, st) {
@@ -123,6 +207,10 @@ class MaterialRemoteDataSource {
         tag: 'Database',
         error: e,
         stackTrace: st,
+      );
+      Logger.error(
+        'Database error details - Code: ${e.code}, Message: ${e.message}, Details: ${e.details}',
+        tag: 'Database',
       );
       throw Exception('Database error: ${e.message}');
     } catch (e, st) {

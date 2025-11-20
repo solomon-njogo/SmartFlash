@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../data/models/course_model.dart';
 import '../../app/app_text_styles.dart';
 import '../../core/providers/course_material_provider.dart';
+import '../../core/providers/quiz_provider.dart';
+import '../../core/providers/deck_provider.dart';
 
 /// Course card widget for displaying courses on home screen
 class CourseCard extends StatelessWidget {
@@ -123,25 +125,39 @@ class CourseCard extends StatelessWidget {
               // Statistics
               Row(
                 children: [
-                  _buildStatItem(
-                    context,
-                    Icons.library_books,
-                    '${course.totalDecks}',
-                    'Decks',
-                    colorScheme,
+                  Consumer<DeckProvider>(
+                    builder: (context, deckProvider, child) {
+                      final deckCount =
+                          deckProvider.getDecksByCourseId(course.id).length;
+                      return _buildStatItem(
+                        context,
+                        Icons.library_books,
+                        '$deckCount',
+                        'Decks',
+                        colorScheme,
+                      );
+                    },
                   ),
                   const SizedBox(width: 16),
-                  _buildStatItem(
-                    context,
-                    Icons.quiz,
-                    '${course.totalQuizzes}',
-                    'Quizzes',
-                    colorScheme,
+                  Consumer<QuizProvider>(
+                    builder: (context, quizProvider, child) {
+                      final quizCount = quizProvider.getQuizCountByCourseId(
+                        course.id,
+                      );
+                      return _buildStatItem(
+                        context,
+                        Icons.quiz,
+                        '$quizCount',
+                        'Quizzes',
+                        colorScheme,
+                      );
+                    },
                   ),
                   const SizedBox(width: 16),
                   Consumer<CourseMaterialProvider>(
                     builder: (context, materialProvider, child) {
-                      final materialCount = materialProvider.getMaterialCountByCourseId(course.id);
+                      final materialCount = materialProvider
+                          .getMaterialCountByCourseId(course.id);
                       return _buildStatItem(
                         context,
                         Icons.attach_file,

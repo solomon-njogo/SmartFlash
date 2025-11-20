@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../data/models/course_material_model.dart';
 import '../../data/remote/material_remote.dart';
 import '../../core/utils/logger.dart';
+import '../../core/services/material_upload_service.dart';
 
 /// Course material provider for managing course materials
 class CourseMaterialProvider extends ChangeNotifier {
@@ -165,13 +166,33 @@ class CourseMaterialProvider extends ChangeNotifier {
     try {
       _setLoading(true);
       _clearError();
-      // Upload to storage and insert DB row via Supabase
-      final remote = MaterialRemoteDataSource();
-      final inserted = await remote.uploadAndInsertMaterial(
-        material,
+      
+      // Use MaterialUploadService to orchestrate the complete upload flow
+      // (validation, upload, text extraction, and storage)
+      final uploadService = MaterialUploadService();
+      final result = await uploadService.uploadMaterial(
+        material: material,
         fileBytes: fileBytes,
         onProgress: onProgress,
       );
+
+      if (!result.success) {
+        _setError(result.error ?? 'Upload failed');
+        return false;
+      }
+
+      // Fetch the updated material from database to get all fields
+      final remote = MaterialRemoteDataSource();
+      final materialsData = await remote.fetchMaterialsByCourseId(material.courseId);
+      final inserted = materialsData.firstWhere(
+        (m) => m['id'] == result.materialId,
+        orElse: () => {},
+      );
+
+      if (inserted.isEmpty) {
+        _setError('Material uploaded but not found in database');
+        return false;
+      }
 
       // Build the final model with remote URL, clear local path
       final saved = material.copyWith(
