@@ -18,7 +18,7 @@ class AIGenerationScreen extends StatefulWidget {
 }
 
 class _AIGenerationScreenState extends State<AIGenerationScreen> {
-  CourseMaterialModel? _selectedMaterial;
+  final Set<CourseMaterialModel> _selectedMaterials = {};
   GenerationType? _generationType;
   String _difficulty = 'medium';
   bool _hasNavigatedToReview = false;
@@ -110,7 +110,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                 const SizedBox(height: 24),
 
                 // Generate Button
-                if (_selectedMaterial != null && _generationType != null)
+                if (_selectedMaterials.isNotEmpty && _generationType != null)
                   _buildGenerateButton(provider),
 
                 // Progress Indicator
@@ -144,7 +144,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
             )
             .toList();
 
-    // Filter by course if courseId is provided
+    // Always filter by course if courseId is provided
     if (widget.courseId != null) {
       materials =
           materials.where((m) => m.courseId == widget.courseId).toList();
@@ -156,47 +156,105 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Select Document', style: AppTextStyles.titleLarge),
+            Text('Select Documents', style: AppTextStyles.titleLarge),
             const SizedBox(height: 12),
             if (materials.isEmpty)
-              const Text('No PDF or Word documents available')
-            else
-              DropdownButtonFormField<CourseMaterialModel>(
-                value: _selectedMaterial,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Choose a document',
-                  border: OutlineInputBorder(),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'No PDF or Word documents available${widget.courseId != null ? ' for this course' : ''}',
+                  style: AppTextStyles.bodyMedium,
                 ),
-                items:
-                    materials.map((material) {
-                      return DropdownMenuItem(
-                        value: material,
-                        child: Text(
-                          material.name,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    }).toList(),
-                selectedItemBuilder: (context) {
-                  return materials.map((material) {
-                    return Text(material.name, overflow: TextOverflow.ellipsis);
-                  }).toList();
-                },
-                onChanged: (material) {
-                  setState(() {
-                    _selectedMaterial = material;
-                  });
-                  if (material != null) {
-                    provider.selectMaterial(material);
-                  }
-                },
+              )
+            else
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  InkWell(
+                    onTap: () => _showDocumentSelectionDialog(materials, provider),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (_selectedMaterials.isEmpty)
+                                  Text(
+                                    'Choose documents',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  )
+                                else
+                                  Text(
+                                    _selectedMaterials.length == 1
+                                        ? _selectedMaterials.first.name
+                                        : '${_selectedMaterials.length} documents selected',
+                                    style: AppTextStyles.bodyMedium,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                if (_selectedMaterials.isNotEmpty && _selectedMaterials.length > 1)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      _selectedMaterials.map((m) => m.name).join(', '),
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: Colors.grey.shade600,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_drop_down,
+                            color: Colors.grey.shade600,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_selectedMaterials.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _selectedMaterials.map((material) {
+                          return Chip(
+                            label: Text(
+                              material.name,
+                              style: AppTextStyles.bodySmall,
+                            ),
+                            onDeleted: () {
+                              setState(() {
+                                _selectedMaterials.remove(material);
+                                provider.selectMaterials(_selectedMaterials.toList());
+                              });
+                            },
+                            deleteIcon: const Icon(Icons.close, size: 18),
+                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                            labelStyle: TextStyle(color: AppColors.primary),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                ],
               ),
-            if (_selectedMaterial != null && provider.documentText == null)
+            if (_selectedMaterials.isNotEmpty && provider.hasDocumentTextError)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  provider.error ?? 'Document text not available',
+                  provider.error ?? 'Some document texts are not available',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.error,
                   ),
@@ -206,6 +264,191 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
         ),
       ),
     );
+  }
+
+  void _showDocumentSelectionDialog(
+    List<CourseMaterialModel> materials,
+    AIGenerationProvider provider,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) => StatefulBuilder(
+          builder: (context, setModalState) {
+            return Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Select Documents',
+                        style: AppTextStyles.titleLarge,
+                      ),
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              setModalState(() {
+                                if (_selectedMaterials.length == materials.length) {
+                                  _selectedMaterials.clear();
+                                } else {
+                                  _selectedMaterials.clear();
+                                  _selectedMaterials.addAll(materials);
+                                }
+                              });
+                            },
+                            child: Text(
+                              _selectedMaterials.length == materials.length
+                                  ? 'Deselect All'
+                                  : 'Select All',
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(),
+                // Document list
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: materials.length,
+                    itemBuilder: (context, index) {
+                      final material = materials[index];
+                      final isSelected = _selectedMaterials.contains(material);
+                      return CheckboxListTile(
+                        title: Text(
+                          material.name,
+                          style: AppTextStyles.bodyMedium,
+                        ),
+                        subtitle: Row(
+                          children: [
+                            Icon(
+                              _getFileTypeIcon(material.fileType),
+                              size: 16,
+                              color: Colors.grey.shade600,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _getFileTypeLabel(material.fileType),
+                              style: AppTextStyles.bodySmall,
+                            ),
+                          ],
+                        ),
+                        value: isSelected,
+                        onChanged: (value) {
+                          setModalState(() {
+                            if (value == true) {
+                              _selectedMaterials.add(material);
+                            } else {
+                              _selectedMaterials.remove(material);
+                            }
+                          });
+                        },
+                        activeColor: AppColors.primary,
+                      );
+                    },
+                  ),
+                ),
+                // Footer with apply button
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _selectedMaterials.isEmpty
+                              ? 'No documents selected'
+                              : '${_selectedMaterials.length} document${_selectedMaterials.length == 1 ? '' : 's'} selected',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: _selectedMaterials.isEmpty
+                                ? Colors.grey.shade600
+                                : AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            provider.selectMaterials(_selectedMaterials.toList());
+                          });
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                        ),
+                        child: const Text('Apply'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  String _getFileTypeLabel(FileType fileType) {
+    switch (fileType) {
+      case FileType.pdf:
+        return 'PDF Document';
+      case FileType.docx:
+      case FileType.doc:
+        return 'Word Document';
+      default:
+        return 'Document';
+    }
+  }
+
+  IconData _getFileTypeIcon(FileType fileType) {
+    switch (fileType) {
+      case FileType.pdf:
+        return Icons.picture_as_pdf;
+      case FileType.docx:
+      case FileType.doc:
+        return Icons.description;
+      default:
+        return Icons.insert_drive_file;
+    }
   }
 
   Widget _buildGenerationTypeSelection() {
@@ -404,3 +647,4 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     );
   }
 }
+

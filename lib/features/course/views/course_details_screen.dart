@@ -650,7 +650,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                 'This course doesn\'t have any quizzes yet.',
                 'Create Quiz',
                 () {
-                  AppNavigation.goAIGeneration(context);
+                  AppNavigation.goAIGeneration(context, courseId: widget.courseId);
                 },
               );
             }
@@ -1046,7 +1046,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
       case 1: // Quizzes tab
         return FloatingActionButton.extended(
           onPressed: () {
-            AppNavigation.goAIGeneration(context);
+            AppNavigation.goAIGeneration(context, courseId: widget.courseId);
           },
           icon: const Icon(Icons.add),
           label: const Text('Create Quiz'),
