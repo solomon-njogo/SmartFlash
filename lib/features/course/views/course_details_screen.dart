@@ -27,15 +27,18 @@ class CourseDetailsScreen extends StatefulWidget {
   State<CourseDetailsScreen> createState() => _CourseDetailsScreenState();
 }
 
-class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
+class _CourseDetailsScreenState extends State<CourseDetailsScreen>
+    with WidgetsBindingObserver {
   late int _currentIndex;
   CourseModel? _course;
   bool _isHeaderExpanded = true;
   bool _materialsLoaded = false;
+  bool _hasRefreshedOnResume = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentIndex = widget.initialTabIndex ?? 0;
     _loadCourse();
     // Schedule the course access marking for after the build phase
@@ -61,13 +64,66 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   }
 
   @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refresh decks when app comes back to foreground
+    if (state == AppLifecycleState.resumed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final deckProvider = Provider.of<DeckProvider>(
+            context,
+            listen: false,
+          );
+          deckProvider.refreshDecks();
+        }
+      });
+    }
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh decks when screen becomes visible again
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final deckProvider = Provider.of<DeckProvider>(context, listen: false);
-      deckProvider.refreshDecks();
-    });
+    // Refresh decks when screen becomes visible again (e.g., when navigating back)
+    // Use a flag to avoid refreshing multiple times in the same frame
+    if (!_hasRefreshedOnResume) {
+      _hasRefreshedOnResume = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _hasRefreshedOnResume = false;
+        if (mounted) {
+          final deckProvider = Provider.of<DeckProvider>(
+            context,
+            listen: false,
+          );
+          // Only refresh if we have a course loaded
+          if (_course != null) {
+            deckProvider.refreshDecks();
+          }
+        }
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(CourseDetailsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Refresh decks when widget is updated (e.g., when navigating back)
+    if (oldWidget.courseId != widget.courseId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final deckProvider = Provider.of<DeckProvider>(
+            context,
+            listen: false,
+          );
+          deckProvider.refreshDecks();
+        }
+      });
+    }
   }
 
   void _loadCourse() {
@@ -268,10 +324,10 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                             ) {
                               final materialCount = materialProvider
                                   .getMaterialCountByCourseId(_course!.id);
-                              final deckCount =
-                                  deckProvider
-                                      .getDecksByCourseId(_course!.id)
-                                      .length;
+                              // Access decks to ensure Consumer2 rebuilds when decks change
+                              final courseDecks = deckProvider
+                                  .getDecksByCourseId(_course!.id);
+                              final deckCount = courseDecks.length;
                               return Wrap(
                                 spacing: 12,
                                 runSpacing: 8,
