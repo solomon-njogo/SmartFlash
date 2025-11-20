@@ -169,6 +169,140 @@ class AIGenerationProvider extends ChangeNotifier {
     }
   }
 
+  /// Regenerate selected questions with feedback
+  Future<void> regenerateSelectedQuestions({
+    required List<int> selectedIndices,
+    required String feedback,
+  }) async {
+    if (_selectedMaterial == null || _documentText == null) {
+      _error = 'Please select a material with parsed text';
+      notifyListeners();
+      return;
+    }
+
+    if (_generationType != GenerationType.quiz || _generatedQuiz == null) {
+      _error = 'No quiz available for regeneration';
+      notifyListeners();
+      return;
+    }
+
+    try {
+      _status = GenerationStatus.generating;
+      _progress = 0.0;
+      _error = null;
+      notifyListeners();
+
+      final originalQuiz = _generatedQuiz!;
+      
+      // Validate indices
+      if (selectedIndices.isEmpty || 
+          selectedIndices.any((i) => i < 0 || i >= originalQuiz.questions.length)) {
+        _error = 'Invalid question indices selected';
+        _status = GenerationStatus.failed;
+        notifyListeners();
+        return;
+      }
+
+      // Get selected questions to extract their properties
+      final selectedQuestions = selectedIndices
+          .map((i) => originalQuiz.questions[i])
+          .toList();
+
+      // Extract difficulty and question types from selected questions
+      // Use the most common difficulty, or default to medium
+      final difficultyCounts = <String, int>{};
+      for (final q in selectedQuestions) {
+        final diff = q.difficulty.name;
+        difficultyCounts[diff] = (difficultyCounts[diff] ?? 0) + 1;
+      }
+      final mostCommonDifficulty = difficultyCounts.entries
+          .reduce((a, b) => a.value > b.value ? a : b)
+          .key;
+
+      final questionTypes = selectedQuestions
+          .map((q) => q.questionType.name)
+          .toSet()
+          .toList();
+
+      // Regenerate only the selected questions
+      final regeneratedQuestions = await _quizGenerator.regenerateSelectedQuestions(
+        documentText: _documentText!,
+        questionCount: selectedIndices.length,
+        difficulty: mostCommonDifficulty,
+        questionTypes: questionTypes,
+        userFeedback: feedback,
+        courseId: originalQuiz.courseId,
+        materialIds: originalQuiz.materialIds,
+        onProgress: (progress) {
+          _progress = progress;
+          notifyListeners();
+        },
+      );
+
+      // Ensure we got the expected number of questions
+      if (regeneratedQuestions.length != selectedIndices.length) {
+        Logger.warning(
+          'Expected ${selectedIndices.length} regenerated questions but got ${regeneratedQuestions.length}',
+          tag: 'AIGenerationProvider',
+        );
+      }
+
+      // Create updated questions list by replacing selected questions
+      final updatedQuestions = List<QuestionPreview>.from(originalQuiz.questions);
+      final now = DateTime.now();
+      
+      // Sort indices in descending order to replace from end to start
+      final sortedIndices = List<int>.from(selectedIndices)..sort((a, b) => b.compareTo(a));
+      
+      // Replace questions at selected indices
+      for (int i = 0; i < sortedIndices.length && i < regeneratedQuestions.length; i++) {
+        final originalIndex = sortedIndices[i];
+        final regeneratedQuestion = regeneratedQuestions[i];
+        
+        // Preserve the original order number and quizId
+        final originalQuestion = updatedQuestions[originalIndex];
+        final originalOrder = originalQuestion.order;
+        
+        // Create new question with preserved order and quizId, updated timestamp
+        final updatedQuestion = QuestionPreview(
+          quizId: originalQuestion.quizId,
+          questionText: regeneratedQuestion.questionText,
+          questionType: regeneratedQuestion.questionType,
+          options: regeneratedQuestion.options,
+          correctAnswers: regeneratedQuestion.correctAnswers,
+          explanation: regeneratedQuestion.explanation,
+          points: regeneratedQuestion.points,
+          difficulty: regeneratedQuestion.difficulty,
+          order: originalOrder,
+          createdAt: originalQuestion.createdAt,
+          updatedAt: now,
+        );
+        
+        updatedQuestions[originalIndex] = updatedQuestion;
+      }
+
+      // Update the quiz with new questions
+      _generatedQuiz = originalQuiz.copyWith(
+        questions: updatedQuestions,
+        updatedAt: now,
+      );
+
+      _status = GenerationStatus.completed;
+      _progress = 1.0;
+      notifyListeners();
+    } catch (e, st) {
+      Logger.error(
+        'Error regenerating selected questions: $e',
+        tag: 'AIGenerationProvider',
+        error: e,
+        stackTrace: st,
+      );
+      _status = GenerationStatus.failed;
+      _error = 'Failed to regenerate selected questions: $e';
+      notifyListeners();
+    }
+  }
+
   /// Regenerate with feedback
   Future<void> regenerateWithFeedback(String feedback) async {
     if (_selectedMaterial == null || _documentText == null) {
@@ -238,6 +372,15 @@ class AIGenerationProvider extends ChangeNotifier {
       _error = 'Failed to regenerate: $e';
       notifyListeners();
     }
+  }
+
+  /// Update quiz questions (for partial regeneration)
+  void updateQuizQuestions(QuizPreview updatedQuiz) {
+    _generatedQuiz = updatedQuiz;
+    _status = GenerationStatus.completed;
+    _progress = 1.0;
+    _error = null;
+    notifyListeners();
   }
 
   /// Clear generated content

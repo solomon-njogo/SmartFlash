@@ -144,21 +144,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
           ),
         ],
       ),
-      floatingActionButton:
-          _currentIndex == 2
-              ? FloatingActionButton.extended(
-                onPressed: () {
-                  AppNavigation.goUploadMaterials(
-                    context,
-                    courseId: widget.courseId,
-                  );
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Add Materials'),
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-              )
-              : null,
+      floatingActionButton: _buildFloatingActionButton(context, colorScheme),
     );
   }
 
@@ -274,7 +260,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                                   ),
                                   Consumer<QuizProvider>(
                                     builder: (context, quizProvider, child) {
-                                      final quizCount = quizProvider.getQuizCountByCourseId(_course!.id);
+                                      final quizCount = quizProvider
+                                          .getQuizCountByCourseId(_course!.id);
                                       return _buildStatChip(
                                         context,
                                         Icons.quiz,
@@ -568,7 +555,10 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                           Text(
                             quiz.description!,
                             style: AppTextStyles.cardSubtitle.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -887,6 +877,46 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             ],
           ),
     );
+  }
+
+  Widget? _buildFloatingActionButton(
+    BuildContext context,
+    ColorScheme colorScheme,
+  ) {
+    switch (_currentIndex) {
+      case 0: // Decks tab
+        return FloatingActionButton.extended(
+          onPressed: () {
+            AppNavigation.goCreateDeck(context, courseId: widget.courseId);
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Create Deck'),
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+        );
+      case 1: // Quizzes tab
+        return FloatingActionButton.extended(
+          onPressed: () {
+            AppNavigation.goAIGeneration(context);
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Create Quiz'),
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+        );
+      case 2: // Materials tab
+        return FloatingActionButton.extended(
+          onPressed: () {
+            AppNavigation.goUploadMaterials(context, courseId: widget.courseId);
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Add Materials'),
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+        );
+      default:
+        return null;
+    }
   }
 
   IconData _getIconData(String iconName) {

@@ -78,21 +78,21 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
             );
           }
 
-          return Column(
-            children: [
-              // Content Preview
-              Expanded(
-                child: SingleChildScrollView(
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                // Content Preview
+                Padding(
                   padding: const EdgeInsets.all(16),
                   child: generationProvider.generationType == GenerationType.flashcards
                       ? _buildFlashcardsPreview(generationProvider, reviewProvider, context)
                       : _buildQuizPreview(generationProvider, reviewProvider, context),
                 ),
-              ),
 
-              // Action Buttons
-              _buildActionButtons(generationProvider, reviewProvider),
-            ],
+                // Action Buttons
+                _buildActionButtons(generationProvider, reviewProvider),
+              ],
+            ),
           );
         },
       ),

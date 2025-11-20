@@ -135,6 +135,119 @@ class AIQuizGenerator {
     }
   }
 
+  /// Regenerate selected questions with user feedback
+  Future<List<QuestionPreview>> regenerateSelectedQuestions({
+    required DocumentTextModel documentText,
+    required int questionCount,
+    required String difficulty,
+    required List<String> questionTypes,
+    required String userFeedback,
+    required String courseId,
+    List<String> materialIds = const [],
+    Function(double)? onProgress,
+  }) async {
+    try {
+      Logger.info(
+        'Regenerating $questionCount selected questions with user feedback',
+        tag: 'AIQuizGenerator',
+      );
+
+      final originalPrompt = AIConstants.getQuizPrompt(
+        documentText: documentText.extractedText,
+        questionCount: questionCount,
+        difficulty: difficulty,
+        questionTypes: questionTypes,
+      );
+
+      final prompt = AIConstants.getRegenerationPrompt(
+        originalPrompt: originalPrompt,
+        userFeedback: userFeedback,
+      );
+
+      if (onProgress != null) {
+        onProgress(0.2);
+      }
+
+      // Generate with retry logic for both API calls and JSON parsing
+      QuizPreview? quiz;
+      int parseAttempts = 0;
+      const maxParseRetries = 3;
+      Exception? lastParseException;
+
+      while (parseAttempts < maxParseRetries && quiz == null) {
+        try {
+          final fullResponse = await _aiService.generateWithRetry(
+            prompt: prompt,
+            maxTokens: AIConstants.defaultMaxTokens * 3,
+            onStreamChunk: (chunk) {
+              if (onProgress != null) {
+                onProgress(0.2 + (chunk.length / 15000).clamp(0.0, 0.7));
+              }
+            },
+          );
+
+          if (onProgress != null) {
+            onProgress(0.9);
+          }
+
+          // Parse JSON response with robust error handling
+          quiz = _parseQuizResponse(
+            fullResponse,
+            questionCount,
+            courseId,
+            materialIds,
+          );
+          break; // Success, exit retry loop
+        } catch (parseError) {
+          lastParseException =
+              parseError is Exception
+                  ? parseError
+                  : Exception(parseError.toString());
+          parseAttempts++;
+
+          if (parseAttempts < maxParseRetries) {
+            Logger.warning(
+              'JSON parsing attempt $parseAttempts failed during selected question regeneration, retrying...',
+              tag: 'AIQuizGenerator',
+            );
+            // Wait before retrying
+            await Future.delayed(Duration(seconds: 2 * parseAttempts));
+            // Reset progress slightly
+            if (onProgress != null) {
+              onProgress(0.1);
+            }
+          } else {
+            Logger.error(
+              'Failed to parse JSON after $maxParseRetries attempts during selected question regeneration',
+              tag: 'AIQuizGenerator',
+            );
+            rethrow;
+          }
+        }
+      }
+
+      if (quiz == null) {
+        throw lastParseException ??
+            Exception('Failed to generate valid questions after retries');
+      }
+
+      if (onProgress != null) {
+        onProgress(1.0);
+      }
+
+      // Return only the questions
+      return quiz.questions;
+    } catch (e, st) {
+      Logger.error(
+        'Error regenerating selected questions: $e',
+        tag: 'AIQuizGenerator',
+        error: e,
+        stackTrace: st,
+      );
+      rethrow;
+    }
+  }
+
   /// Regenerate quiz with user feedback
   Future<QuizPreview> regenerateQuiz({
     required DocumentTextModel documentText,
@@ -708,6 +821,29 @@ class QuizPreview {
         }).toList();
 
     return (quiz: quiz, questions: questionModels);
+  }
+
+  /// Create a copy of QuizPreview with updated fields
+  QuizPreview copyWith({
+    String? name,
+    String? description,
+    List<QuestionPreview>? questions,
+    int? difficulty,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? courseId,
+    List<String>? materialIds,
+  }) {
+    return QuizPreview(
+      name: name ?? this.name,
+      description: description ?? this.description,
+      questions: questions ?? this.questions,
+      difficulty: difficulty ?? this.difficulty,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      courseId: courseId ?? this.courseId,
+      materialIds: materialIds ?? this.materialIds,
+    );
   }
 }
 

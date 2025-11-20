@@ -358,7 +358,23 @@ class AIReviewProvider extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      await _generationProvider!.regenerateWithFeedback(_feedback!);
+
+      // Check if specific questions are selected for partial regeneration
+      final quiz = _generationProvider!.generatedQuiz;
+      if (quiz != null && _selectedQuestionIndices.isNotEmpty) {
+        // Partial regeneration: regenerate only selected questions
+        Logger.info(
+          'Regenerating ${_selectedQuestionIndices.length} selected questions',
+          tag: 'AIReviewProvider',
+        );
+        await _generationProvider!.regenerateSelectedQuestions(
+          selectedIndices: _selectedQuestionIndices,
+          feedback: _feedback!,
+        );
+      } else {
+        // Full regeneration: regenerate all content
+        await _generationProvider!.regenerateWithFeedback(_feedback!);
+      }
 
       _status = ReviewStatus.reviewing;
       _feedback = null;
@@ -373,6 +389,7 @@ class AIReviewProvider extends ChangeNotifier {
         stackTrace: st,
       );
       _status = ReviewStatus.failed;
+      _error = e.toString();
       notifyListeners();
     }
   }
