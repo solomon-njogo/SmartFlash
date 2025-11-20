@@ -11,6 +11,8 @@ import '../core/providers/course_material_provider.dart';
 import '../core/providers/settings_provider.dart';
 import '../core/providers/ai_generation_provider.dart';
 import '../core/providers/ai_review_provider.dart';
+import '../core/providers/flashcard_provider.dart';
+import '../core/providers/flashcard_review_provider.dart';
 import '../data/remote/supabase_client.dart';
 
 /// Main application widget with MaterialApp configuration
@@ -30,6 +32,8 @@ class SmartFlashApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => AIGenerationProvider()),
         ChangeNotifierProvider(create: (_) => AIReviewProvider()),
+        ChangeNotifierProvider(create: (_) => FlashcardProvider()),
+        ChangeNotifierProvider(create: (_) => FlashcardReviewProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

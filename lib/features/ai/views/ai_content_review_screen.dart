@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/providers/ai_generation_provider.dart';
 import '../../../core/providers/ai_review_provider.dart';
+import '../../../core/providers/deck_provider.dart';
 import '../../../app/app_text_styles.dart';
 import '../../../app/theme/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -421,12 +422,16 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
                         const uuid = Uuid();
                         if (generationProvider.generationType == GenerationType.flashcards) {
                           print('Saving flashcards...'); // Debug log
+                          // Prioritize courseId from route context, fallback to material's courseId
+                          final courseId = generationProvider.courseId ?? 
+                                          generationProvider.selectedMaterial?.courseId;
                           success = await reviewProvider.acceptFlashcards(
                             deckId: uuid.v4(), // Generate proper UUID
                             deckName: _deckNameController.text.isNotEmpty
                                 ? _deckNameController.text
                                 : 'AI Generated Deck',
                             createdBy: userId,
+                            courseId: courseId,
                           );
                         } else {
                           print('Saving quiz...'); // Debug log
@@ -438,6 +443,14 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
 
                         if (success && mounted) {
                           print('Save successful!'); // Debug log
+                          
+                          // Refresh deck provider if flashcards were saved
+                          if (generationProvider.generationType == GenerationType.flashcards) {
+                            // Import and refresh deck provider
+                            final deckProvider = Provider.of<DeckProvider>(context, listen: false);
+                            await deckProvider.refreshDecks();
+                          }
+                          
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Content saved successfully!'),

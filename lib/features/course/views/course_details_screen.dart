@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../data/models/course_model.dart';
 import '../../../data/models/quiz_model.dart';
+import '../../../data/models/deck_model.dart' as data_models;
 import '../../../core/providers/course_provider.dart';
 import '../../../core/providers/deck_provider.dart';
 import '../../../core/providers/course_material_provider.dart';
@@ -52,6 +53,20 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
       if (courseMaterials.isEmpty && !materialProvider.isLoading) {
         materialProvider.loadMaterialsForCourse(widget.courseId);
       }
+
+      // Refresh decks to ensure we have the latest data
+      final deckProvider = Provider.of<DeckProvider>(context, listen: false);
+      deckProvider.refreshDecks();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh decks when screen becomes visible again
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final deckProvider = Provider.of<DeckProvider>(context, listen: false);
+      deckProvider.refreshDecks();
     });
   }
 
@@ -244,10 +259,19 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                             const SizedBox(height: 16),
                           ],
                           // Statistics
-                          Consumer<CourseMaterialProvider>(
-                            builder: (context, materialProvider, child) {
+                          Consumer2<CourseMaterialProvider, DeckProvider>(
+                            builder: (
+                              context,
+                              materialProvider,
+                              deckProvider,
+                              child,
+                            ) {
                               final materialCount = materialProvider
                                   .getMaterialCountByCourseId(_course!.id);
+                              final deckCount =
+                                  deckProvider
+                                      .getDecksByCourseId(_course!.id)
+                                      .length;
                               return Wrap(
                                 spacing: 12,
                                 runSpacing: 8,
@@ -255,7 +279,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                                   _buildStatChip(
                                     context,
                                     Icons.library_books,
-                                    '${_course!.totalDecks}',
+                                    '$deckCount',
                                     'Decks',
                                   ),
                                   Consumer<QuizProvider>(
@@ -395,100 +419,148 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   Widget _buildDecksTab(BuildContext context) {
     return Consumer<DeckProvider>(
       builder: (context, deckProvider, child) {
-        final courseDecks = deckProvider.getDecksByCourseId(widget.courseId);
+        // First check local cache
+        final cachedDecks = deckProvider.getDecksByCourseId(widget.courseId);
 
-        if (courseDecks.isEmpty) {
-          return _buildEmptyState(
-            context,
-            Icons.library_books,
-            'No Decks',
-            'This course doesn\'t have any decks yet.',
-            'Create Deck',
-            () {
-              // TODO: Navigate to create deck
-            },
-          );
-        }
+        // Use FutureBuilder with a key that changes when provider updates
+        // This ensures it rebuilds when decks are refreshed
+        return FutureBuilder<List<data_models.DeckModel>>(
+          key: ValueKey(
+            'decks_${widget.courseId}_${deckProvider.decks.length}',
+          ),
+          future:
+              cachedDecks.isNotEmpty
+                  ? Future.value(cachedDecks)
+                  : deckProvider.getDecksByCourseIdAsync(widget.courseId),
+          builder: (context, snapshot) {
+            // Show cached data immediately if available
+            final courseDecks =
+                snapshot.hasData
+                    ? snapshot.data!
+                    : (snapshot.connectionState == ConnectionState.waiting &&
+                            cachedDecks.isNotEmpty
+                        ? cachedDecks
+                        : []);
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: courseDecks.length,
-          itemBuilder: (context, index) {
-            final deck = courseDecks[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                leading: CircleAvatar(
-                  backgroundColor: _course!.color.withOpacity(0.1),
-                  child: Icon(Icons.library_books, color: _course!.color),
-                ),
-                title: Text(
-                  deck.title,
-                  style: AppTextStyles.cardTitle.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                subtitle: Text(
-                  deck.description,
-                  style: AppTextStyles.cardSubtitle.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'study':
-                        // TODO: Navigate to study session
-                        break;
-                      case 'edit':
-                        // TODO: Navigate to edit deck
-                        break;
-                      case 'delete':
-                        _showDeleteDeckDialog(context, deckProvider, deck);
-                        break;
-                    }
-                  },
-                  itemBuilder:
-                      (context) => [
-                        const PopupMenuItem(
-                          value: 'study',
-                          child: Row(
-                            children: [
-                              Icon(Icons.play_arrow),
-                              SizedBox(width: 8),
-                              Text('Study'),
-                            ],
-                          ),
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                courseDecks.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            // Also check cache again in case it was updated
+            final finalDecks =
+                cachedDecks.isNotEmpty ? cachedDecks : courseDecks;
+
+            if (finalDecks.isEmpty) {
+              return _buildEmptyState(
+                context,
+                Icons.library_books,
+                'No Decks',
+                'This course doesn\'t have any decks yet.',
+                'Create Deck',
+                () {
+                  AppNavigation.goAIGeneration(
+                    context,
+                    courseId: widget.courseId,
+                  );
+                },
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                await deckProvider.refreshDecks();
+                // Force rebuild by using setState or the key will handle it
+              },
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: finalDecks.length,
+                itemBuilder: (context, index) {
+                  final deck = finalDecks[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      leading: CircleAvatar(
+                        backgroundColor: _course!.color.withOpacity(0.1),
+                        child: Icon(Icons.library_books, color: _course!.color),
+                      ),
+                      title: Text(
+                        deck.name,
+                        style: AppTextStyles.cardTitle.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit),
-                              SizedBox(width: 8),
-                              Text('Edit'),
-                            ],
-                          ),
+                      ),
+                      subtitle: Text(
+                        deck.description ?? '',
+                        style: AppTextStyles.cardSubtitle.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete),
-                              SizedBox(width: 8),
-                              Text('Delete'),
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (value) {
+                          switch (value) {
+                            case 'study':
+                              AppNavigation.goFlashcardReview(
+                                context,
+                                deckId: deck.id,
+                              );
+                              break;
+                            case 'edit':
+                              // TODO: Navigate to edit deck
+                              break;
+                            case 'delete':
+                              _showDeleteDeckDialog(
+                                context,
+                                deckProvider,
+                                deck,
+                              );
+                              break;
+                          }
+                        },
+                        itemBuilder:
+                            (context) => [
+                              const PopupMenuItem(
+                                value: 'study',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.play_arrow),
+                                    SizedBox(width: 8),
+                                    Text('Study'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit),
+                                    SizedBox(width: 8),
+                                    Text('Edit'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete),
+                                    SizedBox(width: 8),
+                                    Text('Delete'),
+                                  ],
+                                ),
+                              ),
                             ],
-                          ),
-                        ),
-                      ],
-                ),
-                onTap: () {
-                  // TODO: Navigate to deck details
+                      ),
+                      onTap: () {
+                        AppNavigation.goDeckDetails(context, deck.id);
+                      },
+                    ),
+                  );
                 },
               ),
             );
@@ -774,23 +846,42 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   void _showDeleteDeckDialog(
     BuildContext context,
     DeckProvider deckProvider,
-    deck,
+    data_models.DeckModel deck,
   ) {
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
             title: const Text('Delete Deck'),
-            content: Text('Are you sure you want to delete "${deck.title}"?'),
+            content: Text('Are you sure you want to delete "${deck.name}"?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Cancel'),
               ),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(context).pop();
-                  deckProvider.deleteDeck(deck.id);
+                  final success = await deckProvider.deleteDeck(deck.id);
+                  if (context.mounted) {
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Deck deleted successfully'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            deckProvider.error ?? 'Failed to delete deck',
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 },
                 child: const Text('Delete'),
               ),
@@ -887,7 +978,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
       case 0: // Decks tab
         return FloatingActionButton.extended(
           onPressed: () {
-            AppNavigation.goCreateDeck(context, courseId: widget.courseId);
+            AppNavigation.goAIGeneration(context, courseId: widget.courseId);
           },
           icon: const Icon(Icons.add),
           label: const Text('Create Deck'),

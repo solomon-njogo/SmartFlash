@@ -113,6 +113,7 @@ class AIReviewProvider extends ChangeNotifier {
     required String deckName,
     required String? createdBy,
     required String description,
+    String? courseId,
   }) async {
     try {
       // Try to get existing deck
@@ -124,6 +125,9 @@ class AIReviewProvider extends ChangeNotifier {
     } catch (e) {
       // Create new deck if it doesn't exist
       final now = DateTime.now();
+      // Set courseId as-is - the database will handle type conversion
+      // If the schema migration has been run, course_id will be TEXT
+      // If not, we'll get an error and the user can run the migration
       final deck = DeckModel(
         id: _uuid.v4(), // Generate proper UUID
         name: deckName,
@@ -132,6 +136,7 @@ class AIReviewProvider extends ChangeNotifier {
         createdAt: now,
         updatedAt: now,
         isAIGenerated: true,
+        courseId: courseId, // Set courseId as-is, let database handle it
       );
       await _supabaseService.createDeck(deck);
       return deck;
@@ -143,6 +148,7 @@ class AIReviewProvider extends ChangeNotifier {
     required String deckId,
     required String deckName,
     String? createdBy,
+    String? courseId,
   }) async {
     // Prevent concurrent save operations
     if (_isSaving) {
@@ -183,6 +189,7 @@ class AIReviewProvider extends ChangeNotifier {
         deckName: deckName,
         createdBy: createdBy,
         description: 'AI-generated flashcards',
+        courseId: courseId,
       );
 
       // Save flashcards

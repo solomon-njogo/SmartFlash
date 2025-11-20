@@ -33,6 +33,7 @@ class AIGenerationProvider extends ChangeNotifier {
   List<FlashcardPreview>? _generatedFlashcards;
   QuizPreview? _generatedQuiz;
   GenerationType? _generationType;
+  String? _courseId;
 
   // Getters
   GenerationStatus get status => _status;
@@ -43,10 +44,17 @@ class AIGenerationProvider extends ChangeNotifier {
   List<FlashcardPreview>? get generatedFlashcards => _generatedFlashcards;
   QuizPreview? get generatedQuiz => _generatedQuiz;
   GenerationType? get generationType => _generationType;
+  String? get courseId => _courseId;
 
   bool get isGenerating => _status == GenerationStatus.generating;
   bool get hasGeneratedContent =>
       _generatedFlashcards != null || _generatedQuiz != null;
+
+  /// Set the course ID for this generation session
+  void setCourseId(String? courseId) {
+    _courseId = courseId;
+    notifyListeners();
+  }
 
   /// Select material for generation
   Future<void> selectMaterial(CourseMaterialModel material) async {
@@ -398,6 +406,7 @@ class AIGenerationProvider extends ChangeNotifier {
   void reset() {
     _selectedMaterial = null;
     _documentText = null;
+    _courseId = null;
     clearGeneratedContent();
   }
 }

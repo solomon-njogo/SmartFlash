@@ -9,7 +9,9 @@ import '../../../app/router.dart';
 
 /// Screen for AI content generation
 class AIGenerationScreen extends StatefulWidget {
-  const AIGenerationScreen({super.key});
+  final String? courseId;
+
+  const AIGenerationScreen({super.key, this.courseId});
 
   @override
   State<AIGenerationScreen> createState() => _AIGenerationScreenState();
@@ -25,6 +27,10 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
   @override
   void initState() {
     super.initState();
+    // If courseId is provided, default to flashcards (deck creation)
+    if (widget.courseId != null) {
+      _generationType = GenerationType.flashcards;
+    }
   }
 
   @override
@@ -38,10 +44,9 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
   void _onProviderChanged() {
     if (_provider == null || !mounted) return;
 
-    // Auto-navigate to review screen when quiz generation completes
+    // Auto-navigate to review screen when generation completes
     if (!_hasNavigatedToReview &&
         _provider!.status == GenerationStatus.completed &&
-        _provider!.generationType == GenerationType.quiz &&
         _provider!.hasGeneratedContent) {
       _hasNavigatedToReview = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -65,6 +70,10 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
       ),
       body: Consumer<AIGenerationProvider>(
         builder: (context, provider, child) {
+          // Set courseId in provider if available (only once)
+          if (widget.courseId != null && provider.courseId != widget.courseId) {
+            provider.setCourseId(widget.courseId);
+          }
           // Set up listener on first build
           if (_provider != provider) {
             _provider?.removeListener(_onProviderChanged);
@@ -75,7 +84,6 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
           // Check for auto-navigation in build (as backup)
           if (!_hasNavigatedToReview &&
               provider.status == GenerationStatus.completed &&
-              provider.generationType == GenerationType.quiz &&
               provider.hasGeneratedContent) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted && !_hasNavigatedToReview) {
@@ -126,7 +134,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
 
   Widget _buildMaterialSelection(AIGenerationProvider provider) {
     final materialsProvider = context.watch<CourseMaterialProvider>();
-    final materials =
+    var materials =
         materialsProvider.materials
             .where(
               (m) =>
@@ -135,6 +143,12 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                   m.fileType == FileType.doc,
             )
             .toList();
+
+    // Filter by course if courseId is provided
+    if (widget.courseId != null) {
+      materials =
+          materials.where((m) => m.courseId == widget.courseId).toList();
+    }
 
     return Card(
       child: Padding(

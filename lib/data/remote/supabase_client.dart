@@ -207,6 +207,8 @@ class SupabaseService {
       Logger.info('Creating deck: ${deck.name}');
 
       // Only include fields that exist in the database schema
+      // Note: course_id may be TEXT or UUID depending on schema migration
+      // We'll include it as-is and let the database handle type conversion
       final deckData = {
         'id': deck.id,
         'name': deck.name,
@@ -215,6 +217,8 @@ class SupabaseService {
         'created_at': deck.createdAt.toIso8601String(),
         'updated_at': deck.updatedAt.toIso8601String(),
         'is_ai_generated': deck.isAIGenerated,
+        // Only include course_id if it's not null
+        // The database will handle type conversion if needed
         if (deck.courseId != null) 'course_id': deck.courseId,
       };
 
@@ -280,20 +284,49 @@ class SupabaseService {
     }
   }
 
+  /// Get decks for a course
+  /// Queries decks directly by course_id
+  Future<List<DeckModel>> getCourseDecks(String courseId) async {
+    try {
+      Logger.info('Getting decks for course: $courseId');
+
+      if (!isAuthenticated) {
+        Logger.warning('User not authenticated, returning empty list');
+        return [];
+      }
+
+      final response = await client
+          .from('decks')
+          .select()
+          .eq('course_id', courseId)
+          .order('created_at', ascending: false);
+
+      Logger.info('Found ${response.length} decks for course $courseId');
+      return response
+          .map<DeckModel>((json) => DeckModel.fromJson(json))
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get course decks: $e');
+      rethrow;
+    }
+  }
+
   /// Create a new flashcard
   Future<FlashcardModel> createFlashcard(FlashcardModel flashcard) async {
     try {
       Logger.info('Creating flashcard: ${flashcard.id}');
 
+      // Use toDatabaseJson() to only include fields that exist in the database schema
       final response =
           await client
               .from('flashcards')
-              .insert(flashcard.toJson())
+              .insert(flashcard.toDatabaseJson())
               .select()
               .single();
 
       Logger.info('Flashcard created successfully');
-      return FlashcardModel.fromJson(response);
+      // Convert snake_case from database to camelCase for model
+      return FlashcardModel.fromDatabaseJson(response);
     } catch (e) {
       Logger.error('Failed to create flashcard: $e');
       rethrow;
@@ -305,16 +338,18 @@ class SupabaseService {
     try {
       Logger.info('Updating flashcard: ${flashcard.id}');
 
+      // Use toDatabaseJson() to only include fields that exist in the database schema
       final response =
           await client
               .from('flashcards')
-              .update(flashcard.toJson())
+              .update(flashcard.toDatabaseJson())
               .eq('id', flashcard.id)
               .select()
               .single();
 
       Logger.info('Flashcard updated successfully');
-      return FlashcardModel.fromJson(response);
+      // Convert snake_case from database to camelCase for model
+      return FlashcardModel.fromDatabaseJson(response);
     } catch (e) {
       Logger.error('Failed to update flashcard: $e');
       rethrow;
@@ -334,10 +369,31 @@ class SupabaseService {
 
       Logger.info('Deck flashcards retrieved successfully');
       return response
-          .map<FlashcardModel>((json) => FlashcardModel.fromJson(json))
+          .map<FlashcardModel>((json) => FlashcardModel.fromDatabaseJson(json))
           .toList();
     } catch (e) {
       Logger.error('Failed to get deck flashcards: $e');
+      rethrow;
+    }
+  }
+
+  /// Get user's flashcards
+  Future<List<FlashcardModel>> getUserFlashcards(String userId) async {
+    try {
+      Logger.info('Getting flashcards for user: $userId');
+
+      final response = await client
+          .from('flashcards')
+          .select()
+          .eq('created_by', userId)
+          .order('updated_at', ascending: false);
+
+      Logger.info('User flashcards retrieved successfully');
+      return response
+          .map<FlashcardModel>((json) => FlashcardModel.fromDatabaseJson(json))
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get user flashcards: $e');
       rethrow;
     }
   }

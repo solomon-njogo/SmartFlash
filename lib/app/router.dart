@@ -15,6 +15,10 @@ import '../features/materials/views/upload_materials_screen.dart';
 import '../features/materials/views/material_preview_screen.dart';
 import '../features/ai/views/ai_generation_screen.dart';
 import '../features/ai/views/ai_content_review_screen.dart';
+import '../features/deck/views/deck_details_screen.dart';
+import '../features/deck/views/create_deck_screen.dart';
+import '../features/deck/views/flashcard_edit_screen.dart';
+import '../features/deck/views/flashcard_review_screen.dart';
 
 /// App router configuration using GoRouter
 class AppRouter {
@@ -116,7 +120,10 @@ class AppRouter {
       GoRoute(
         path: '/create-deck',
         name: 'createDeck',
-        builder: (context, state) => const CreateDeckScreen(),
+        builder: (context, state) {
+          final courseId = state.uri.queryParameters['courseId'];
+          return CreateDeckScreen(courseId: courseId);
+        },
       ),
 
       GoRoute(
@@ -134,6 +141,32 @@ class AppRouter {
         builder: (context, state) {
           final deckId = state.pathParameters['deckId']!;
           return DeckDetailsScreen(deckId: deckId);
+        },
+      ),
+
+      GoRoute(
+        path: '/flashcard-edit',
+        name: 'flashcardEdit',
+        builder: (context, state) {
+          final deckId = state.uri.queryParameters['deckId']!;
+          final flashcardId = state.uri.queryParameters['flashcardId'];
+          return FlashcardEditScreen(
+            deckId: deckId,
+            flashcardId: flashcardId,
+          );
+        },
+      ),
+
+      GoRoute(
+        path: '/flashcard-review',
+        name: 'flashcardReview',
+        builder: (context, state) {
+          final deckId = state.uri.queryParameters['deckId']!;
+          final flashcardId = state.uri.queryParameters['flashcardId'];
+          return FlashcardReviewScreen(
+            deckId: deckId,
+            flashcardId: flashcardId,
+          );
         },
       ),
 
@@ -186,7 +219,10 @@ class AppRouter {
       GoRoute(
         path: '/ai-generation',
         name: 'aiGeneration',
-        builder: (context, state) => const AIGenerationScreen(),
+        builder: (context, state) {
+          final courseId = state.uri.queryParameters['courseId'];
+          return AIGenerationScreen(courseId: courseId);
+        },
       ),
       GoRoute(
         path: '/ai-review',
@@ -353,13 +389,43 @@ class AppNavigation {
   }
 
   /// Navigate to AI generation
-  static void goAIGeneration(BuildContext context) {
-    push(context, '/ai-generation');
+  static void goAIGeneration(BuildContext context, {String? courseId}) {
+    if (courseId != null) {
+      push(context, '/ai-generation?courseId=$courseId');
+    } else {
+      push(context, '/ai-generation');
+    }
   }
 
   /// Navigate to AI review
   static void goAIReview(BuildContext context) {
     push(context, '/ai-review');
+  }
+
+  /// Navigate to flashcard edit
+  static void goFlashcardEdit(
+    BuildContext context, {
+    required String deckId,
+    String? flashcardId,
+  }) {
+    if (flashcardId != null) {
+      push(context, '/flashcard-edit?deckId=$deckId&flashcardId=$flashcardId');
+    } else {
+      push(context, '/flashcard-edit?deckId=$deckId');
+    }
+  }
+
+  /// Navigate to flashcard review
+  static void goFlashcardReview(
+    BuildContext context, {
+    required String deckId,
+    String? flashcardId,
+  }) {
+    if (flashcardId != null) {
+      push(context, '/flashcard-review?deckId=$deckId&flashcardId=$flashcardId');
+    } else {
+      push(context, '/flashcard-review?deckId=$deckId');
+    }
   }
 }
 
