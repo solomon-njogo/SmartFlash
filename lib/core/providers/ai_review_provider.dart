@@ -28,6 +28,7 @@ class AIReviewProvider extends ChangeNotifier {
   String? _error;
   List<int> _selectedFlashcardIndices = [];
   List<int> _selectedQuestionIndices = [];
+  bool _isSaving = false;
 
   // Getters
   ReviewStatus get status => _status;
@@ -143,7 +144,17 @@ class AIReviewProvider extends ChangeNotifier {
     required String deckName,
     String? createdBy,
   }) async {
+    // Prevent concurrent save operations
+    if (_isSaving) {
+      Logger.warning(
+        'acceptFlashcards called while already saving. Ignoring duplicate request.',
+        tag: 'AIReviewProvider',
+      );
+      return false;
+    }
+
     try {
+      _isSaving = true;
       _status = ReviewStatus.saving;
       notifyListeners();
 
@@ -203,12 +214,24 @@ class AIReviewProvider extends ChangeNotifier {
       _status = ReviewStatus.failed;
       notifyListeners();
       return false;
+    } finally {
+      _isSaving = false;
     }
   }
 
   /// Accept and save quiz
   Future<bool> acceptQuiz({String? createdBy}) async {
+    // Prevent concurrent save operations
+    if (_isSaving) {
+      Logger.warning(
+        'acceptQuiz called while already saving. Ignoring duplicate request.',
+        tag: 'AIReviewProvider',
+      );
+      return false;
+    }
+
     try {
+      _isSaving = true;
       Logger.info('Starting acceptQuiz', tag: 'AIReviewProvider');
       _status = ReviewStatus.saving;
       _error = null;
@@ -314,6 +337,8 @@ class AIReviewProvider extends ChangeNotifier {
       _error = e.toString();
       notifyListeners();
       return false;
+    } finally {
+      _isSaving = false;
     }
   }
 
@@ -359,6 +384,7 @@ class AIReviewProvider extends ChangeNotifier {
     _error = null;
     _selectedFlashcardIndices.clear();
     _selectedQuestionIndices.clear();
+    _isSaving = false;
     notifyListeners();
   }
 }

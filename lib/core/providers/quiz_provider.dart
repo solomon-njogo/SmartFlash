@@ -111,10 +111,15 @@ class QuizProvider extends ChangeNotifier {
 
       final quizzes = await supabaseService.getCourseQuizzes(courseId);
 
-      // Update local cache with results
+      // Update local cache with results, avoiding duplicates
       if (quizzes.isNotEmpty) {
-        _quizzes.addAll(quizzes);
-        notifyListeners();
+        final existingIds = _quizzes.map((q) => q.id).toSet();
+        final newQuizzes =
+            quizzes.where((q) => !existingIds.contains(q.id)).toList();
+        if (newQuizzes.isNotEmpty) {
+          _quizzes.addAll(newQuizzes);
+          notifyListeners();
+        }
       }
 
       return quizzes;

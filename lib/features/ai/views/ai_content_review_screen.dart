@@ -399,6 +399,11 @@ class _AIContentReviewScreenState extends State<AIContentReviewScreen> {
               onPressed: reviewProvider.status == ReviewStatus.saving
                   ? null
                   : () async {
+                      // Additional safeguard: prevent multiple rapid clicks
+                      if (reviewProvider.status == ReviewStatus.saving) {
+                        return;
+                      }
+                      
                       print('Accept button pressed!'); // Debug log
                       try {
                         final userId = Supabase.instance.client.auth.currentUser?.id;

@@ -296,7 +296,7 @@ class AIQuizGenerator {
       final questionsData = jsonData['questions'] as List;
 
       // Validate and parse questions with error handling
-      final questions = <QuestionPreview>[];
+      var questions = <QuestionPreview>[];
       for (int i = 0; i < questionsData.length; i++) {
         try {
           final data = questionsData[i] as Map<String, dynamic>;
@@ -404,6 +404,15 @@ class AIQuizGenerator {
           'No valid questions could be parsed from the AI response. '
           'Expected $expectedQuestionCount questions but got 0 after parsing.',
         );
+      }
+
+      // Truncate to expected count if AI generated more questions than requested
+      if (questions.length > expectedQuestionCount) {
+        Logger.warning(
+          'AI generated ${questions.length} questions but only $expectedQuestionCount were requested. Truncating to requested count.',
+          tag: 'AIQuizGenerator',
+        );
+        questions = questions.take(expectedQuestionCount).toList();
       }
 
       Logger.info(
