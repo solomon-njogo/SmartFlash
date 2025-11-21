@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../../../app/router.dart';
@@ -20,6 +21,16 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Calculate responsive padding based on screen size
+    final baseWidth = 375.0;
+    final scaleFactor = (screenWidth / baseWidth).clamp(0.8, 1.3);
+    final horizontalPadding = (24 * scaleFactor).clamp(16.0, 32.0);
+    final verticalSpacing = (40 * scaleFactor).clamp(24.0, 56.0);
+    final sectionSpacing = (32 * scaleFactor).clamp(24.0, 40.0);
+    final cardsSpacing = (48 * scaleFactor).clamp(32.0, 64.0);
+    final bottomPadding = (24 * scaleFactor).clamp(16.0, 32.0);
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -30,22 +41,22 @@ class _AuthScreenState extends State<AuthScreen> {
             Expanded(
               child: SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: Column(
                     children: [
-                      const SizedBox(height: 40),
+                      SizedBox(height: verticalSpacing),
 
                       // App icon section
                       _buildAppIcon(),
-                      const SizedBox(height: 32),
+                      SizedBox(height: sectionSpacing),
 
                       // Welcome message section
                       _buildWelcomeSection(),
-                      const SizedBox(height: 48),
+                      SizedBox(height: cardsSpacing),
 
                       // Feature cards section
                       _buildFeatureCards(),
-                      const SizedBox(height: 40),
+                      SizedBox(height: verticalSpacing),
                     ],
                   ),
                 ),
@@ -54,7 +65,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
             // Fix button to bottom position
             Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(bottomPadding),
               child: _buildGetStartedButton(),
             ),
           ],
@@ -64,22 +75,41 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildAppIcon() {
-    return const AppLogo(size: 120, borderRadius: 20);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final baseWidth = 375.0;
+    final scaleFactor = (screenWidth / baseWidth).clamp(0.8, 1.3);
+    final iconSize = (120 * scaleFactor).clamp(100.0, 140.0);
+    final borderRadius = (24 * scaleFactor).clamp(20.0, 28.0);
+    
+    return AppLogo(
+      size: iconSize,
+      borderRadius: borderRadius,
+    );
   }
 
   Widget _buildWelcomeSection() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final baseWidth = 375.0;
+    final scaleFactor = (screenWidth / baseWidth).clamp(0.8, 1.3);
+    final spacing = (12 * scaleFactor).clamp(8.0, 16.0);
+    final fontSize = (16 * scaleFactor).clamp(14.0, 18.0);
+    
     return Column(
       children: [
         const AppName(
           variant: AppNameVariant.branded,
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: spacing),
         Text(
           'Your smart learning companion',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: fontSize,
+            height: 1.5,
           ),
         ),
       ],
@@ -87,6 +117,11 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildFeatureCards() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final baseWidth = 375.0;
+    final scaleFactor = (screenWidth / baseWidth).clamp(0.8, 1.3);
+    final cardPadding = (6 * scaleFactor).clamp(4.0, 10.0);
+    
     final features = [
       {
         'icon': Icons.library_books_outlined,
@@ -104,7 +139,7 @@ class _AuthScreenState extends State<AuthScreen> {
           children: [
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(cardPadding),
                 child: _buildFeatureCard(
                   icon: features[0]['icon'] as IconData,
                   title: features[0]['title'] as String,
@@ -113,7 +148,7 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(cardPadding),
                 child: _buildFeatureCard(
                   icon: features[1]['icon'] as IconData,
                   title: features[1]['title'] as String,
@@ -127,7 +162,7 @@ class _AuthScreenState extends State<AuthScreen> {
           children: [
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(cardPadding),
                 child: _buildFeatureCard(
                   icon: features[2]['icon'] as IconData,
                   title: features[2]['title'] as String,
@@ -136,7 +171,7 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: EdgeInsets.all(cardPadding),
                 child: _buildFeatureCard(
                   icon: features[3]['icon'] as IconData,
                   title: features[3]['title'] as String,
@@ -150,31 +185,95 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildFeatureCard({required IconData icon, required String title}) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Calculate responsive sizes based on screen dimensions
+    // Base sizes for a standard phone (375px width)
+    final baseWidth = 375.0;
+    final scaleFactor = (screenWidth / baseWidth).clamp(0.8, 1.3);
+    
+    // Responsive padding (scales with screen size)
+    final cardPadding = (16 * scaleFactor).clamp(12.0, 24.0);
+    final verticalPadding = (6 * scaleFactor).clamp(4.0, 10.0);
+    
+    // Responsive icon size (scales with screen size)
+    final iconContainerSize = (40 * scaleFactor).clamp(36.0, 56.0);
+    final iconSize = (20 * scaleFactor).clamp(18.0, 28.0);
+    
+    // Responsive spacing
+    final spacing = (6 * scaleFactor).clamp(4.0, 10.0);
+    
+    // Responsive font size
+    final fontSize = (10 * scaleFactor).clamp(9.0, 13.0);
+    
+    // Responsive border radius
+    final borderRadius = (14 * scaleFactor).clamp(12.0, 18.0);
+    final iconBorderRadius = (10 * scaleFactor).clamp(8.0, 14.0);
+
     return AspectRatio(
       aspectRatio: 1.0, // Makes the card square
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(cardPadding),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceVariant,
-          borderRadius: BorderRadius.circular(12),
+          // Glassmorphic effect
+          color: isDark
+              ? colorScheme.surfaceVariant.withOpacity(0.6)
+              : colorScheme.surface.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(borderRadius),
           border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
+            color: colorScheme.outlineVariant.withOpacity(0.3),
             width: 1,
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.labelMedium.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: verticalPadding),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                flex: 2,
+                child: Container(
+                  width: iconContainerSize,
+                  height: iconContainerSize,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(iconBorderRadius),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: iconSize,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ),
+              SizedBox(height: spacing),
+              Flexible(
+                flex: 3,
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.titleSmall.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                    fontSize: fontSize,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -188,34 +287,49 @@ class _AuthScreenState extends State<AuthScreen> {
         return SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: authProvider.isLoading ? null : _handleGoogleAuth,
+            onPressed: authProvider.isLoading ? null : () {
+              HapticFeedback.mediumImpact();
+              _handleGoogleAuth();
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: colorScheme.primary,
               foregroundColor: colorScheme.onPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 18), // Increased for better touch target
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12), // Modern corner radius
               ),
               elevation: 2,
+              minimumSize: const Size(double.infinity, 56), // Minimum touch target
             ),
             child:
                 authProvider.isLoading
                     ? SizedBox(
-                      height: 20,
-                      width: 20,
+                      height: 24,
+                      width: 24,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
+                        strokeWidth: 3,
                         valueColor: AlwaysStoppedAnimation<Color>(
                           colorScheme.onPrimary,
                         ),
                       ),
                     )
-                    : Text(
-                      'Get Started',
-                      style: AppTextStyles.button.copyWith(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.login,
+                          size: 20,
+                          color: colorScheme.onPrimary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Get Started with Google',
+                          style: AppTextStyles.button.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
           ),
         );

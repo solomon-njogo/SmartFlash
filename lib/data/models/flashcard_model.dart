@@ -136,6 +136,49 @@ class FlashcardModel extends HiveObject {
   /// Convert FlashcardModel to JSON
   Map<String, dynamic> toJson() => _$FlashcardModelToJson(this);
 
+  /// Create FlashcardModel from database JSON (snake_case)
+  factory FlashcardModel.fromDatabaseJson(Map<String, dynamic> json) {
+    return FlashcardModel(
+      id: json['id'] as String,
+      deckId: json['deck_id'] as String,
+      frontText: json['front_text'] as String,
+      backText: json['back_text'] as String,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdBy: json['created_by'] as String?,
+      isAIGenerated: json['is_ai_generated'] as bool? ?? false,
+      // Default values for fields not in database
+      difficulty: DifficultyLevel.medium,
+      cardType: CardType.basic,
+      interval: 1,
+      easeFactor: 2.5,
+      repetitions: 0,
+      consecutiveCorrectAnswers: 0,
+      totalReviews: 0,
+      averageResponseTime: 0.0,
+      fsrsState: json['fsrs_state'] != null
+          ? FSRSCardState.fromJson(json['fsrs_state'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  /// Convert FlashcardModel to database-compatible JSON (snake_case)
+  /// Only includes fields that exist in the database schema
+  Map<String, dynamic> toDatabaseJson() {
+    return {
+      'id': id,
+      'deck_id': deckId,
+      'front_text': frontText,
+      'back_text': backText,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'created_by': createdBy,
+      'is_ai_generated': isAIGenerated,
+      if (fsrsState != null) 'fsrs_state': fsrsState!.toJson(),
+      if (fsrsState != null) 'fsrs_card_id': fsrsState!.cardId,
+    };
+  }
+
   /// Create a copy of FlashcardModel with updated fields
   FlashcardModel copyWith({
     String? id,

@@ -7,11 +7,29 @@ import '../features/auth/views/auth_screen.dart';
 import '../features/home/views/home_screen.dart';
 import '../features/auth/views/profile_screen.dart';
 import '../features/course/views/course_details_screen.dart';
+import '../features/course/views/course_review_history_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/course_screens.dart';
 import '../features/course/views/create_course_screen.dart' as feature_course;
-import 'screens/other_screens.dart';
+import '../features/course/views/edit_course_screen.dart'
+    as feature_course_edit;
 import '../features/materials/views/upload_materials_screen.dart';
+import '../features/ai/views/ai_generation_screen.dart';
+import '../features/ai/views/ai_content_review_screen.dart';
+import '../features/deck/views/deck_details_screen.dart';
+import '../features/deck/views/create_deck_screen.dart';
+import '../features/deck/views/flashcard_edit_screen.dart';
+import '../features/deck/views/flashcard_review_screen.dart';
+import '../features/deck/views/deck_attempt_results_screen.dart';
+import '../data/models/deck_attempt_model.dart';
+import '../features/quiz/views/quiz_taking_screen.dart';
+import '../features/quiz/views/quiz_results_screen.dart';
+import '../data/models/quiz_attempt_model.dart';
+import '../features/search/views/search_screen.dart' as search_feature;
+import '../features/deck/views/edit_deck_screen.dart';
+import '../features/deck/views/study_session_screen.dart';
+import '../features/deck/views/study_results_screen.dart';
+import 'screens/statistics_screen.dart';
+import 'screens/not_found_screen.dart';
 
 /// App router configuration using GoRouter
 class AppRouter {
@@ -80,7 +98,13 @@ class AppRouter {
         name: 'courseDetails',
         builder: (context, state) {
           final courseId = state.pathParameters['courseId']!;
-          return CourseDetailsScreen(courseId: courseId);
+          final tabIndex = state.uri.queryParameters['tab'];
+          final initialTabIndex =
+              tabIndex != null ? int.tryParse(tabIndex) : null;
+          return CourseDetailsScreen(
+            courseId: courseId,
+            initialTabIndex: initialTabIndex,
+          );
         },
       ),
 
@@ -95,7 +119,16 @@ class AppRouter {
         name: 'editCourse',
         builder: (context, state) {
           final courseId = state.pathParameters['courseId']!;
-          return EditCourseScreen(courseId: courseId);
+          return feature_course_edit.EditCourseScreen(courseId: courseId);
+        },
+      ),
+
+      GoRoute(
+        path: '/course-review-history/:courseId',
+        name: 'courseReviewHistory',
+        builder: (context, state) {
+          final courseId = state.pathParameters['courseId']!;
+          return CourseReviewHistoryScreen(courseId: courseId);
         },
       ),
 
@@ -108,7 +141,10 @@ class AppRouter {
       GoRoute(
         path: '/create-deck',
         name: 'createDeck',
-        builder: (context, state) => const CreateDeckScreen(),
+        builder: (context, state) {
+          final courseId = state.uri.queryParameters['courseId'];
+          return CreateDeckScreen(courseId: courseId);
+        },
       ),
 
       GoRoute(
@@ -126,6 +162,44 @@ class AppRouter {
         builder: (context, state) {
           final deckId = state.pathParameters['deckId']!;
           return DeckDetailsScreen(deckId: deckId);
+        },
+      ),
+
+      GoRoute(
+        path: '/flashcard-edit',
+        name: 'flashcardEdit',
+        builder: (context, state) {
+          final deckId = state.uri.queryParameters['deckId']!;
+          final flashcardId = state.uri.queryParameters['flashcardId'];
+          return FlashcardEditScreen(deckId: deckId, flashcardId: flashcardId);
+        },
+      ),
+
+      GoRoute(
+        path: '/flashcard-review',
+        name: 'flashcardReview',
+        builder: (context, state) {
+          final deckId = state.uri.queryParameters['deckId']!;
+          final flashcardId = state.uri.queryParameters['flashcardId'];
+          return FlashcardReviewScreen(
+            deckId: deckId,
+            flashcardId: flashcardId,
+          );
+        },
+      ),
+
+      GoRoute(
+        path: '/deck-attempt-results',
+        name: 'deckAttemptResults',
+        builder: (context, state) {
+          final attempt = state.extra as DeckAttemptModel?;
+          if (attempt == null) {
+            // If no attempt provided, navigate back
+            return const Scaffold(
+              body: Center(child: Text('No attempt data provided')),
+            );
+          }
+          return DeckAttemptResultsScreen(attempt: attempt);
         },
       ),
 
@@ -148,12 +222,6 @@ class AppRouter {
       ),
 
       GoRoute(
-        path: '/search',
-        name: 'search',
-        builder: (context, state) => const SearchScreen(),
-      ),
-
-      GoRoute(
         path: '/statistics',
         name: 'statistics',
         builder: (context, state) => const StatisticsScreen(),
@@ -163,9 +231,54 @@ class AppRouter {
         name: 'uploadMaterials',
         builder: (context, state) {
           final queryCourseId = state.uri.queryParameters['courseId'];
-          final extraCourseId = state.extra is String ? state.extra as String? : null;
-          return UploadMaterialsScreen(preselectedCourseId: queryCourseId ?? extraCourseId);
+          final extraCourseId =
+              state.extra is String ? state.extra as String? : null;
+          return UploadMaterialsScreen(
+            preselectedCourseId: queryCourseId ?? extraCourseId,
+          );
         },
+      ),
+      GoRoute(
+        path: '/ai-generation',
+        name: 'aiGeneration',
+        builder: (context, state) {
+          final courseId = state.uri.queryParameters['courseId'];
+          return AIGenerationScreen(courseId: courseId);
+        },
+      ),
+      GoRoute(
+        path: '/ai-review',
+        name: 'aiReview',
+        builder: (context, state) => const AIContentReviewScreen(),
+      ),
+      GoRoute(
+        path: '/quiz-taking/:quizId',
+        name: 'quizTaking',
+        builder: (context, state) {
+          final quizId = state.pathParameters['quizId']!;
+          return QuizTakingScreen(quizId: quizId);
+        },
+      ),
+      GoRoute(
+        path: '/quiz-results',
+        name: 'quizResults',
+        builder: (context, state) {
+          final attempt = state.extra as QuizAttemptModel?;
+          if (attempt == null) {
+            // If no attempt provided, navigate back
+            return const Scaffold(
+              body: Center(child: Text('No attempt data provided')),
+            );
+          }
+          return QuizResultsScreen(attempt: attempt);
+        },
+      ),
+
+      // Search route
+      GoRoute(
+        path: '/search',
+        name: 'search',
+        builder: (context, state) => const search_feature.SearchScreen(),
       ),
     ],
     errorBuilder: (context, state) => const NotFoundScreen(),
@@ -248,8 +361,16 @@ class AppNavigation {
   }
 
   /// Navigate to course details
-  static void goCourseDetails(BuildContext context, String courseId) {
-    push(context, '/course-details/$courseId');
+  static void goCourseDetails(
+    BuildContext context,
+    String courseId, {
+    int? tabIndex,
+  }) {
+    if (tabIndex != null) {
+      push(context, '/course-details/$courseId?tab=$tabIndex');
+    } else {
+      push(context, '/course-details/$courseId');
+    }
   }
 
   /// Navigate to create course
@@ -260,6 +381,11 @@ class AppNavigation {
   /// Navigate to edit course
   static void goEditCourse(BuildContext context, String courseId) {
     push(context, '/edit-course/$courseId');
+  }
+
+  /// Navigate to course review history
+  static void goCourseReviewHistory(BuildContext context, String courseId) {
+    push(context, '/course-review-history/$courseId');
   }
 
   /// Navigate to create deck
@@ -281,9 +407,24 @@ class AppNavigation {
     push(context, '/deck-details/$deckId');
   }
 
+  /// Navigate to search
+  static void goSearch(BuildContext context) {
+    push(context, '/search');
+  }
+
   /// Navigate to study session
   static void goStudySession(BuildContext context, String deckId) {
     push(context, '/study-session/$deckId');
+  }
+
+  /// Navigate to quiz taking screen
+  static void goQuizTaking(BuildContext context, String quizId) {
+    push(context, '/quiz-taking/$quizId');
+  }
+
+  /// Navigate to quiz results screen
+  static void goQuizResults(BuildContext context, QuizAttemptModel attempt) {
+    push(context, '/quiz-results', extra: attempt);
   }
 
   /// Navigate to study results
@@ -292,11 +433,6 @@ class AppNavigation {
     Map<String, dynamic> results,
   ) {
     push(context, '/study-results', extra: results);
-  }
-
-  /// Navigate to search
-  static void goSearch(BuildContext context) {
-    push(context, '/search');
   }
 
   /// Navigate to statistics
@@ -310,6 +446,50 @@ class AppNavigation {
       push(context, '/upload-materials?courseId=$courseId');
     } else {
       push(context, '/upload-materials');
+    }
+  }
+
+
+  /// Navigate to AI generation
+  static void goAIGeneration(BuildContext context, {String? courseId}) {
+    if (courseId != null) {
+      push(context, '/ai-generation?courseId=$courseId');
+    } else {
+      push(context, '/ai-generation');
+    }
+  }
+
+  /// Navigate to AI review
+  static void goAIReview(BuildContext context) {
+    push(context, '/ai-review');
+  }
+
+  /// Navigate to flashcard edit
+  static void goFlashcardEdit(
+    BuildContext context, {
+    required String deckId,
+    String? flashcardId,
+  }) {
+    if (flashcardId != null) {
+      push(context, '/flashcard-edit?deckId=$deckId&flashcardId=$flashcardId');
+    } else {
+      push(context, '/flashcard-edit?deckId=$deckId');
+    }
+  }
+
+  /// Navigate to flashcard review
+  static void goFlashcardReview(
+    BuildContext context, {
+    required String deckId,
+    String? flashcardId,
+  }) {
+    if (flashcardId != null) {
+      push(
+        context,
+        '/flashcard-review?deckId=$deckId&flashcardId=$flashcardId',
+      );
+    } else {
+      push(context, '/flashcard-review?deckId=$deckId');
     }
   }
 }

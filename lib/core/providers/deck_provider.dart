@@ -1,31 +1,17 @@
 import 'package:flutter/foundation.dart';
-
-/// Simple deck model for now
-class DeckModel {
-  final String id;
-  final String title;
-  final String description;
-  final String category;
-  final String? courseId;
-
-  DeckModel({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.category,
-    this.courseId,
-  });
-}
+import '../../data/models/deck_model.dart' as data_models;
+import '../../data/remote/supabase_client.dart';
+import '../utils/logger.dart';
 
 /// Deck provider for managing deck-related state
 class DeckProvider extends ChangeNotifier {
-  List<DeckModel> _decks = [];
+  List<data_models.DeckModel> _decks = [];
   bool _isLoading = false;
   String? _error;
-  DeckModel? _selectedDeck;
+  data_models.DeckModel? _selectedDeck;
 
   /// List of all decks
-  List<DeckModel> get decks => _decks;
+  List<data_models.DeckModel> get decks => _decks;
 
   /// Whether data is loading
   bool get isLoading => _isLoading;
@@ -34,130 +20,43 @@ class DeckProvider extends ChangeNotifier {
   String? get error => _error;
 
   /// Currently selected deck
-  DeckModel? get selectedDeck => _selectedDeck;
+  data_models.DeckModel? get selectedDeck => _selectedDeck;
 
   DeckProvider() {
     _loadDecks();
   }
 
-  /// Load all decks from local storage
+  /// Load all decks from database
   Future<void> _loadDecks() async {
     try {
       _setLoading(true);
       _clearError();
 
-      // Sample decks organized by courses
-      _decks = [
-        // Computer Science 101 decks
-        DeckModel(
-          id: 'cs101_deck1',
-          title: 'Programming Basics',
-          description: 'Variables, functions, and control structures',
-          category: 'Technology',
-          courseId: 'cs101',
-        ),
-        DeckModel(
-          id: 'cs101_deck2',
-          title: 'Data Structures',
-          description: 'Arrays, lists, stacks, and queues',
-          category: 'Technology',
-          courseId: 'cs101',
-        ),
-        DeckModel(
-          id: 'cs101_deck3',
-          title: 'Algorithms',
-          description: 'Sorting, searching, and algorithm complexity',
-          category: 'Technology',
-          courseId: 'cs101',
-        ),
+      final supabaseService = SupabaseService.instance;
 
-        // Biology Advanced decks
-        DeckModel(
-          id: 'bio_adv_deck1',
-          title: 'Cell Biology',
-          description: 'Cell structure, organelles, and functions',
-          category: 'Science',
-          courseId: 'bio_adv',
-        ),
-        DeckModel(
-          id: 'bio_adv_deck2',
-          title: 'Genetics',
-          description: 'DNA, RNA, genes, and inheritance',
-          category: 'Science',
-          courseId: 'bio_adv',
-        ),
+      // Check if user is authenticated
+      if (!supabaseService.isAuthenticated) {
+        Logger.info('User not authenticated, skipping deck load');
+        _decks = [];
+        notifyListeners();
+        return;
+      }
 
-        // World History decks
-        DeckModel(
-          id: 'hist_deck1',
-          title: 'Ancient Civilizations',
-          description: 'Egypt, Greece, Rome, and early empires',
-          category: 'History',
-          courseId: 'world_history',
-        ),
-        DeckModel(
-          id: 'hist_deck2',
-          title: 'Medieval Period',
-          description: 'Middle Ages, feudalism, and crusades',
-          category: 'History',
-          courseId: 'world_history',
-        ),
-        DeckModel(
-          id: 'hist_deck3',
-          title: 'Modern Era',
-          description: 'Renaissance, revolutions, and world wars',
-          category: 'History',
-          courseId: 'world_history',
-        ),
+      final userId = supabaseService.currentUserId;
+      if (userId == null) {
+        Logger.warning('User ID is null, skipping deck load');
+        _decks = [];
+        notifyListeners();
+        return;
+      }
 
-        // Mathematics decks
-        DeckModel(
-          id: 'math_deck1',
-          title: 'Algebra',
-          description: 'Linear equations, functions, and inequalities',
-          category: 'Mathematics',
-          courseId: 'math_course',
-        ),
-        DeckModel(
-          id: 'math_deck2',
-          title: 'Geometry',
-          description: 'Angles, triangles, and circle theorems',
-          category: 'Mathematics',
-          courseId: 'math_course',
-        ),
-        DeckModel(
-          id: 'math_deck3',
-          title: 'Calculus',
-          description: 'Derivatives, integrals, and limits',
-          category: 'Mathematics',
-          courseId: 'math_course',
-        ),
-        DeckModel(
-          id: 'math_deck4',
-          title: 'Statistics',
-          description: 'Probability, distributions, and data analysis',
-          category: 'Mathematics',
-          courseId: 'math_course',
-        ),
+      // Fetch decks from database
+      _decks = await supabaseService.getUserDecks(userId);
 
-        // Spanish Language decks
-        DeckModel(
-          id: 'spanish_deck1',
-          title: 'Vocabulary A1',
-          description: 'Basic Spanish words and phrases',
-          category: 'Language',
-          courseId: 'spanish_lang',
-        ),
-        DeckModel(
-          id: 'spanish_deck2',
-          title: 'Common Phrases',
-          description: 'Greetings, travel, and daily expressions',
-          category: 'Language',
-          courseId: 'spanish_lang',
-        ),
-      ];
+      Logger.info('Loaded ${_decks.length} decks from database');
       notifyListeners();
     } catch (e) {
+      Logger.error('Failed to load decks: $e');
       _setError(e.toString());
     } finally {
       _setLoading(false);
@@ -170,15 +69,23 @@ class DeckProvider extends ChangeNotifier {
   }
 
   /// Create a new deck
-  Future<bool> createDeck(DeckModel deck) async {
+  Future<bool> createDeck(data_models.DeckModel deck) async {
     try {
       _setLoading(true);
       _clearError();
 
-      _decks.add(deck);
+      final supabaseService = SupabaseService.instance;
+      if (!supabaseService.isAuthenticated) {
+        _setError('User not authenticated');
+        return false;
+      }
+
+      final createdDeck = await supabaseService.createDeck(deck);
+      _decks.add(createdDeck);
       notifyListeners();
       return true;
     } catch (e) {
+      Logger.error('Failed to create deck: $e');
       _setError(e.toString());
       return false;
     } finally {
@@ -187,18 +94,26 @@ class DeckProvider extends ChangeNotifier {
   }
 
   /// Update an existing deck
-  Future<bool> updateDeck(DeckModel deck) async {
+  Future<bool> updateDeck(data_models.DeckModel deck) async {
     try {
       _setLoading(true);
       _clearError();
 
+      final supabaseService = SupabaseService.instance;
+      if (!supabaseService.isAuthenticated) {
+        _setError('User not authenticated');
+        return false;
+      }
+
+      final updatedDeck = await supabaseService.updateDeck(deck);
       final index = _decks.indexWhere((d) => d.id == deck.id);
       if (index != -1) {
-        _decks[index] = deck;
+        _decks[index] = updatedDeck;
         notifyListeners();
       }
       return true;
     } catch (e) {
+      Logger.error('Failed to update deck: $e');
       _setError(e.toString());
       return false;
     } finally {
@@ -212,10 +127,18 @@ class DeckProvider extends ChangeNotifier {
       _setLoading(true);
       _clearError();
 
+      final supabaseService = SupabaseService.instance;
+      if (!supabaseService.isAuthenticated) {
+        _setError('User not authenticated');
+        return false;
+      }
+
+      await supabaseService.deleteDeck(deckId);
       _decks.removeWhere((deck) => deck.id == deckId);
       notifyListeners();
       return true;
     } catch (e) {
+      Logger.error('Failed to delete deck: $e');
       _setError(e.toString());
       return false;
     } finally {
@@ -224,7 +147,7 @@ class DeckProvider extends ChangeNotifier {
   }
 
   /// Get deck by ID
-  DeckModel? getDeckById(String deckId) {
+  data_models.DeckModel? getDeckById(String deckId) {
     try {
       return _decks.firstWhere((deck) => deck.id == deckId);
     } catch (e) {
@@ -233,7 +156,7 @@ class DeckProvider extends ChangeNotifier {
   }
 
   /// Set selected deck
-  void selectDeck(DeckModel deck) {
+  void selectDeck(data_models.DeckModel deck) {
     _selectedDeck = deck;
     notifyListeners();
   }
@@ -244,27 +167,60 @@ class DeckProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Search decks by title
-  List<DeckModel> searchDecks(String query) {
+  /// Search decks by name
+  List<data_models.DeckModel> searchDecks(String query) {
     if (query.isEmpty) return _decks;
 
     return _decks
         .where(
           (deck) =>
-              deck.title.toLowerCase().contains(query.toLowerCase()) ||
-              deck.description.toLowerCase().contains(query.toLowerCase()),
+              deck.name.toLowerCase().contains(query.toLowerCase()) ||
+              (deck.description?.toLowerCase().contains(query.toLowerCase()) ?? false),
         )
         .toList();
   }
 
-  /// Get decks by category
-  List<DeckModel> getDecksByCategory(String category) {
-    return _decks.where((deck) => deck.category == category).toList();
+  /// Get decks by course ID
+  List<data_models.DeckModel> getDecksByCourseId(String courseId) {
+    return _decks.where((deck) => deck.courseId == courseId).toList();
   }
 
-  /// Get decks by course ID
-  List<DeckModel> getDecksByCourseId(String courseId) {
-    return _decks.where((deck) => deck.courseId == courseId).toList();
+  /// Get decks by course ID (async version that queries database if needed)
+  Future<List<data_models.DeckModel>> getDecksByCourseIdAsync(String courseId) async {
+    try {
+      // First try local cache
+      final cached = getDecksByCourseId(courseId);
+      if (cached.isNotEmpty) {
+        Logger.info('Found ${cached.length} decks in cache for course: $courseId');
+        return cached;
+      }
+
+      // Fallback: query database directly by courseId
+      Logger.info(
+        'No local decks found, querying database for course decks: $courseId',
+      );
+      final supabaseService = SupabaseService.instance;
+      if (!supabaseService.isAuthenticated) return [];
+
+      // Query directly by courseId (more efficient than loading all decks)
+      final courseDecks = await supabaseService.getCourseDecks(courseId);
+
+      // Update local cache with results, avoiding duplicates
+      if (courseDecks.isNotEmpty) {
+        final existingIds = _decks.map((d) => d.id).toSet();
+        final newDecks = courseDecks.where((d) => !existingIds.contains(d.id)).toList();
+        if (newDecks.isNotEmpty) {
+          _decks.addAll(newDecks);
+          notifyListeners();
+        }
+      }
+
+      Logger.info('Found ${courseDecks.length} decks for course: $courseId');
+      return courseDecks;
+    } catch (e) {
+      Logger.error('Failed to get decks by course ID (async): $e');
+      return [];
+    }
   }
 
   /// Load decks with optional course ID filter

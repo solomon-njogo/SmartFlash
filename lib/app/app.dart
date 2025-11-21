@@ -9,6 +9,12 @@ import '../core/providers/quiz_provider.dart';
 import '../core/providers/course_provider.dart';
 import '../core/providers/course_material_provider.dart';
 import '../core/providers/settings_provider.dart';
+import '../core/providers/ai_generation_provider.dart';
+import '../core/providers/ai_review_provider.dart';
+import '../core/providers/flashcard_provider.dart';
+import '../core/providers/flashcard_review_provider.dart';
+import '../core/providers/search_provider.dart';
+import '../data/remote/supabase_client.dart';
 
 /// Main application widget with MaterialApp configuration
 class SmartFlashApp extends StatelessWidget {
@@ -25,6 +31,11 @@ class SmartFlashApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CourseMaterialProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => AIGenerationProvider()),
+        ChangeNotifierProvider(create: (_) => AIReviewProvider()),
+        ChangeNotifierProvider(create: (_) => FlashcardProvider()),
+        ChangeNotifierProvider(create: (_) => FlashcardReviewProvider()),
+        ChangeNotifierProvider(create: (_) => SearchProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -90,6 +101,14 @@ class AppConfig {
 
   /// Initialize app-wide configurations
   static Future<void> initialize() async {
+    // Initialize SupabaseService
+    try {
+      await SupabaseService.instance.initialize();
+    } catch (e) {
+      // If Supabase is already initialized, that's fine
+      // The client getter will handle it
+    }
+
     // Set preferred orientations
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,

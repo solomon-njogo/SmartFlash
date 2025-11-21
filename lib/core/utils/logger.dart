@@ -1,9 +1,61 @@
 import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 
+/// ANSI color codes for terminal output
+class _AnsiColors {
+  static const String reset = '\x1B[0m';
+  static const String bold = '\x1B[1m';
+
+  // Text colors
+  // ignore: unused_field
+  static const String blue = '\x1B[34m';
+  static const String brightBlue = '\x1B[94m';
+  static const String cyan = '\x1B[36m';
+  static const String green = '\x1B[32m';
+  // ignore: unused_field
+  static const String yellow = '\x1B[33m';
+  static const String orange = '\x1B[38;5;208m';
+  // ignore: unused_field
+  static const String red = '\x1B[31m';
+  // ignore: unused_field
+  static const String brightRed = '\x1B[91m';
+  static const String white = '\x1B[37m';
+  // ignore: unused_field
+  static const String gray = '\x1B[90m';
+
+  // Background colors
+  static const String bgRed = '\x1B[41m';
+  // ignore: unused_field
+  static const String bgBlue = '\x1B[44m';
+  // ignore: unused_field
+  static const String bgYellow = '\x1B[43m';
+}
+
 /// Logging utility for the SmartFlash application
 class Logger {
   static const String _tag = 'SmartFlash';
+
+  /// Format log message with colors and icons
+  static String _formatLogMessage({
+    required String message,
+    required String tag,
+    required String icon,
+    required String color,
+    String? level,
+    bool isError = false,
+  }) {
+    final levelText = level != null ? ' $level' : '';
+    final tagColor = isError ? _AnsiColors.white : _AnsiColors.cyan;
+    final messageColor = isError ? _AnsiColors.white : color;
+
+    if (isError) {
+      // Error with red background
+      return '${_AnsiColors.bgRed}${_AnsiColors.bold}$icon $tagColor[$tag]${_AnsiColors.reset}${_AnsiColors.bgRed}$levelText: $messageColor$message${_AnsiColors.reset}';
+    } else {
+      // Normal colored log
+      return '$color$icon $tagColor[$tag]${_AnsiColors.reset}$levelText: $messageColor$message${_AnsiColors.reset}';
+    }
+  }
 
   /// Log debug message
   static void debug(
@@ -13,12 +65,23 @@ class Logger {
     StackTrace? stackTrace,
   }) {
     if (kDebugMode) {
+      final tagName = tag ?? _tag;
       developer.log(
         message,
-        name: tag ?? _tag,
+        name: tagName,
         level: 500, // Debug level
         error: error,
         stackTrace: stackTrace,
+      );
+      // Print with color and icon
+      print(
+        _formatLogMessage(
+          message: message,
+          tag: tagName,
+          icon: '🌿',
+          color: _AnsiColors.green,
+          level: 'DEBUG',
+        ),
       );
     }
   }
@@ -30,12 +93,22 @@ class Logger {
     Object? error,
     StackTrace? stackTrace,
   }) {
+    final tagName = tag ?? _tag;
     developer.log(
       message,
-      name: tag ?? _tag,
+      name: tagName,
       level: 800, // Info level
       error: error,
       stackTrace: stackTrace,
+    );
+    // Print with blue color and lightbulb icon
+    print(
+      _formatLogMessage(
+        message: message,
+        tag: tagName,
+        icon: '💡',
+        color: _AnsiColors.brightBlue,
+      ),
     );
   }
 
@@ -46,12 +119,23 @@ class Logger {
     Object? error,
     StackTrace? stackTrace,
   }) {
+    final tagName = tag ?? _tag;
     developer.log(
       message,
-      name: tag ?? _tag,
+      name: tagName,
       level: 900, // Warning level
       error: error,
       stackTrace: stackTrace,
+    );
+    // Print with orange/yellow color and warning icon
+    print(
+      _formatLogMessage(
+        message: message,
+        tag: tagName,
+        icon: '⚠️',
+        color: _AnsiColors.orange,
+        level: 'WARNING',
+      ),
     );
   }
 
@@ -62,13 +146,34 @@ class Logger {
     Object? error,
     StackTrace? stackTrace,
   }) {
+    final tagName = tag ?? _tag;
     developer.log(
       message,
-      name: tag ?? _tag,
+      name: tagName,
       level: 1000, // Error level
       error: error,
       stackTrace: stackTrace,
     );
+    // Print error with red background and stop icon
+    print(
+      _formatLogMessage(
+        message: message,
+        tag: tagName,
+        icon: '🚫',
+        color: _AnsiColors.white,
+        level: 'ERROR',
+        isError: true,
+      ),
+    );
+    if (error != null) {
+      print(
+        '$_AnsiColors.red  └─ Error details: $_AnsiColors.brightRed$error$_AnsiColors.reset',
+      );
+    }
+    if (stackTrace != null) {
+      print('$_AnsiColors.gray  └─ Stack trace:$_AnsiColors.reset');
+      print('$_AnsiColors.gray$stackTrace$_AnsiColors.reset');
+    }
   }
 
   /// Log API request

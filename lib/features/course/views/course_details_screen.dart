@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../data/models/course_model.dart';
+import '../../../data/models/quiz_model.dart';
+import '../../../data/models/deck_model.dart' as data_models;
 import '../../../core/providers/course_provider.dart';
 import '../../../core/providers/deck_provider.dart';
 import '../../../core/providers/course_material_provider.dart';
@@ -9,30 +12,121 @@ import '../../../app/app_text_styles.dart';
 import '../../../data/models/course_material_model.dart';
 import '../../../app/widgets/course_material_card.dart';
 import '../../../app/router.dart';
+import '../../../core/widgets/loading_indicator.dart';
+import '../../../core/widgets/error_widget.dart';
 
 /// Course details screen with tabs for Decks, Quizzes, and Materials
 class CourseDetailsScreen extends StatefulWidget {
   final String courseId;
+  final int? initialTabIndex;
 
-  const CourseDetailsScreen({super.key, required this.courseId});
+  const CourseDetailsScreen({
+    super.key,
+    required this.courseId,
+    this.initialTabIndex,
+  });
 
   @override
   State<CourseDetailsScreen> createState() => _CourseDetailsScreenState();
 }
 
-class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
-  int _currentIndex = 0;
+class _CourseDetailsScreenState extends State<CourseDetailsScreen>
+    with WidgetsBindingObserver {
+  late int _currentIndex;
   CourseModel? _course;
   bool _isHeaderExpanded = true;
+  bool _materialsLoaded = false;
+  bool _hasRefreshedOnResume = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _currentIndex = widget.initialTabIndex ?? 0;
     _loadCourse();
     // Schedule the course access marking for after the build phase
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _markCourseAsAccessed();
+      // Ensure materials are loaded for the course to show accurate counts
+      final materialProvider = Provider.of<CourseMaterialProvider>(
+        context,
+        listen: false,
+      );
+      // Only load if materials haven't been loaded for this course yet
+      final courseMaterials = materialProvider.getMaterialsByCourseId(
+        widget.courseId,
+      );
+      if (courseMaterials.isEmpty && !materialProvider.isLoading) {
+        materialProvider.loadMaterialsForCourse(widget.courseId);
+      }
+
+      // Refresh decks to ensure we have the latest data
+      final deckProvider = Provider.of<DeckProvider>(context, listen: false);
+      deckProvider.refreshDecks();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refresh decks when app comes back to foreground
+    if (state == AppLifecycleState.resumed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final deckProvider = Provider.of<DeckProvider>(
+            context,
+            listen: false,
+          );
+          deckProvider.refreshDecks();
+        }
+      });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh decks when screen becomes visible again (e.g., when navigating back)
+    // Use a flag to avoid refreshing multiple times in the same frame
+    if (!_hasRefreshedOnResume) {
+      _hasRefreshedOnResume = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _hasRefreshedOnResume = false;
+        if (mounted) {
+          final deckProvider = Provider.of<DeckProvider>(
+            context,
+            listen: false,
+          );
+          // Only refresh if we have a course loaded
+          if (_course != null) {
+            deckProvider.refreshDecks();
+          }
+        }
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(CourseDetailsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Refresh decks when widget is updated (e.g., when navigating back)
+    if (oldWidget.courseId != widget.courseId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final deckProvider = Provider.of<DeckProvider>(
+            context,
+            listen: false,
+          );
+          deckProvider.refreshDecks();
+        }
+      });
+    }
   }
 
   void _loadCourse() {
@@ -65,28 +159,11 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
 
     return Scaffold(
       backgroundColor: colorScheme.background,
-      appBar: AppBar(
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
-        title: Text(
-          _course!.name,
-          style: AppTextStyles.titleLarge.copyWith(
-            color: colorScheme.onSurface,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              // TODO: Implement edit course
-            },
-            icon: Icon(Icons.edit, color: colorScheme.onSurface),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Course header
-          _buildCourseHeader(context),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Course header
+            _buildCourseHeader(context),
           // Tab content
           Expanded(
             child: IndexedStack(
@@ -99,6 +176,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             ),
           ),
         ],
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -123,6 +201,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
           ),
         ],
       ),
+      floatingActionButton: _buildFloatingActionButton(context, colorScheme),
     );
   }
 
@@ -145,11 +224,18 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             child: Row(
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 64, // Larger for better visibility
+                  height: 64,
                   decoration: BoxDecoration(
-                    color: _course!.color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
+                    color: _course!.color.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16), // Modern corner radius
+                    boxShadow: [
+                      BoxShadow(
+                        color: _course!.color.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Icon(
                     _getIconData(_course!.iconName ?? 'folder'),
@@ -184,10 +270,25 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                 ),
                 IconButton(
                   onPressed: () {
+                    HapticFeedback.selectionClick();
+                    AppNavigation.goEditCourse(context, _course!.id);
+                  },
+                  icon: Icon(Icons.edit, color: colorScheme.onSurface),
+                  tooltip: 'Edit Course',
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(48, 48), // Better touch target
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
                     setState(() {
                       _isHeaderExpanded = !_isHeaderExpanded;
                     });
                   },
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(48, 48), // Better touch target
+                  ),
                   icon: AnimatedRotation(
                     turns: _isHeaderExpanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 200),
@@ -222,29 +323,50 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                             const SizedBox(height: 16),
                           ],
                           // Statistics
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 8,
-                            children: [
-                              _buildStatChip(
-                                context,
-                                Icons.library_books,
-                                '${_course!.totalDecks}',
-                                'Decks',
-                              ),
-                              _buildStatChip(
-                                context,
-                                Icons.quiz,
-                                '${_course!.totalQuizzes}',
-                                'Quizzes',
-                              ),
-                              _buildStatChip(
-                                context,
-                                Icons.attach_file,
-                                '${_course!.totalMaterials}',
-                                'Materials',
-                              ),
-                            ],
+                          Consumer2<CourseMaterialProvider, DeckProvider>(
+                            builder: (
+                              context,
+                              materialProvider,
+                              deckProvider,
+                              child,
+                            ) {
+                              final materialCount = materialProvider
+                                  .getMaterialCountByCourseId(_course!.id);
+                              // Access decks to ensure Consumer2 rebuilds when decks change
+                              final courseDecks = deckProvider
+                                  .getDecksByCourseId(_course!.id);
+                              final deckCount = courseDecks.length;
+                              return Wrap(
+                                spacing: 12,
+                                runSpacing: 8,
+                                children: [
+                                  _buildStatChip(
+                                    context,
+                                    Icons.library_books,
+                                    '$deckCount',
+                                    'Decks',
+                                  ),
+                                  Consumer<QuizProvider>(
+                                    builder: (context, quizProvider, child) {
+                                      final quizCount = quizProvider
+                                          .getQuizCountByCourseId(_course!.id);
+                                      return _buildStatChip(
+                                        context,
+                                        Icons.quiz,
+                                        '$quizCount',
+                                        'Quizzes',
+                                      );
+                                    },
+                                  ),
+                                  _buildStatChip(
+                                    context,
+                                    Icons.attach_file,
+                                    '$materialCount',
+                                    'Materials',
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                           // Tags
                           if (_course!.tags.isNotEmpty) ...[
@@ -273,6 +395,25 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                                   }).toList(),
                             ),
                           ],
+                          // Review History Button
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                HapticFeedback.selectionClick();
+                                AppNavigation.goCourseReviewHistory(
+                                  context,
+                                  _course!.id,
+                                );
+                              },
+                              icon: const Icon(Icons.history, size: 20),
+                              label: const Text('View Review History'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     )
@@ -295,12 +436,12 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isSmallScreen ? 8 : 12,
-        vertical: isSmallScreen ? 6 : 8,
+        horizontal: isSmallScreen ? 10 : 14,
+        vertical: isSmallScreen ? 8 : 10,
       ),
       decoration: BoxDecoration(
         color: colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20), // Modern corner radius
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -361,100 +502,149 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   Widget _buildDecksTab(BuildContext context) {
     return Consumer<DeckProvider>(
       builder: (context, deckProvider, child) {
-        final courseDecks = deckProvider.getDecksByCourseId(widget.courseId);
+        // First check local cache
+        final cachedDecks = deckProvider.getDecksByCourseId(widget.courseId);
 
-        if (courseDecks.isEmpty) {
-          return _buildEmptyState(
-            context,
-            Icons.library_books,
-            'No Decks',
-            'This course doesn\'t have any decks yet.',
-            'Create Deck',
-            () {
-              // TODO: Navigate to create deck
-            },
-          );
-        }
+        // Use FutureBuilder with a key that changes when provider updates
+        // This ensures it rebuilds when decks are refreshed
+        return FutureBuilder<List<data_models.DeckModel>>(
+          key: ValueKey(
+            'decks_${widget.courseId}_${deckProvider.decks.length}',
+          ),
+          future:
+              cachedDecks.isNotEmpty
+                  ? Future.value(cachedDecks)
+                  : deckProvider.getDecksByCourseIdAsync(widget.courseId),
+          builder: (context, snapshot) {
+            // Show cached data immediately if available
+            final courseDecks =
+                snapshot.hasData
+                    ? snapshot.data!
+                    : (snapshot.connectionState == ConnectionState.waiting &&
+                            cachedDecks.isNotEmpty
+                        ? cachedDecks
+                        : []);
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: courseDecks.length,
-          itemBuilder: (context, index) {
-            final deck = courseDecks[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                leading: CircleAvatar(
-                  backgroundColor: _course!.color.withOpacity(0.1),
-                  child: Icon(Icons.library_books, color: _course!.color),
-                ),
-                title: Text(
-                  deck.title,
-                  style: AppTextStyles.cardTitle.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                subtitle: Text(
-                  deck.description,
-                  style: AppTextStyles.cardSubtitle.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'study':
-                        // TODO: Navigate to study session
-                        break;
-                      case 'edit':
-                        // TODO: Navigate to edit deck
-                        break;
-                      case 'delete':
-                        _showDeleteDeckDialog(context, deckProvider, deck);
-                        break;
-                    }
-                  },
-                  itemBuilder:
-                      (context) => [
-                        const PopupMenuItem(
-                          value: 'study',
-                          child: Row(
-                            children: [
-                              Icon(Icons.play_arrow),
-                              SizedBox(width: 8),
-                              Text('Study'),
-                            ],
-                          ),
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                courseDecks.isEmpty) {
+              return ListSkeletonLoading(
+                itemCount: 3,
+                itemBuilder: (context, index) => const CardSkeletonLoading(),
+              );
+            }
+
+            // Also check cache again in case it was updated
+            final finalDecks =
+                cachedDecks.isNotEmpty ? cachedDecks : courseDecks;
+
+            if (finalDecks.isEmpty) {
+              return _buildEmptyState(
+                context,
+                Icons.library_books,
+                'No Decks',
+                'This course doesn\'t have any decks yet.',
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                HapticFeedback.lightImpact();
+                await deckProvider.refreshDecks();
+                // Force rebuild by using setState or the key will handle it
+              },
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: finalDecks.length,
+                itemBuilder: (context, index) {
+                  final deck = finalDecks[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16), // Modern corner radius
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      leading: CircleAvatar(
+                        backgroundColor: _course!.color.withOpacity(0.1),
+                        child: Icon(Icons.library_books, color: _course!.color),
+                      ),
+                      title: Text(
+                        deck.name,
+                        style: AppTextStyles.cardTitle.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit),
-                              SizedBox(width: 8),
-                              Text('Edit'),
-                            ],
-                          ),
+                      ),
+                      subtitle: Text(
+                        deck.description ?? '',
+                        style: AppTextStyles.cardSubtitle.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete),
-                              SizedBox(width: 8),
-                              Text('Delete'),
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (value) {
+                          switch (value) {
+                            case 'study':
+                              AppNavigation.goFlashcardReview(
+                                context,
+                                deckId: deck.id,
+                              );
+                              break;
+                            case 'edit':
+                              // TODO: Navigate to edit deck
+                              break;
+                            case 'delete':
+                              _showDeleteDeckDialog(
+                                context,
+                                deckProvider,
+                                deck,
+                              );
+                              break;
+                          }
+                        },
+                        itemBuilder:
+                            (context) => [
+                              const PopupMenuItem(
+                                value: 'study',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.play_arrow),
+                                    SizedBox(width: 8),
+                                    Text('Study'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit),
+                                    SizedBox(width: 8),
+                                    Text('Edit'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete),
+                                    SizedBox(width: 8),
+                                    Text('Delete'),
+                                  ],
+                                ),
+                              ),
                             ],
-                          ),
-                        ),
-                      ],
-                ),
-                onTap: () {
-                  // TODO: Navigate to deck details
+                      ),
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        AppNavigation.goFlashcardReview(
+                          context,
+                          deckId: deck.id,
+                        );
+                      },
+                    ),
+                  );
                 },
               ),
             );
@@ -467,156 +657,136 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   Widget _buildQuizzesTab(BuildContext context) {
     return Consumer<QuizProvider>(
       builder: (context, quizProvider, child) {
-        final courseQuizzes = quizProvider.getQuizzesByCourseId(
-          widget.courseId,
-        );
+        // Use FutureBuilder to handle async fallback
+        return FutureBuilder<List<QuizModel>>(
+          future: quizProvider.getQuizzesByCourseIdAsync(widget.courseId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return ListSkeletonLoading(
+                itemCount: 3,
+                itemBuilder: (context, index) => const CardSkeletonLoading(),
+              );
+            }
 
-        if (courseQuizzes.isEmpty) {
-          return _buildEmptyState(
-            context,
-            Icons.quiz,
-            'No Quizzes',
-            'This course doesn\'t have any quizzes yet.',
-            'Create Quiz',
-            () {
-              // TODO: Navigate to create quiz
-            },
-          );
-        }
+            final courseQuizzes = snapshot.data ?? [];
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: courseQuizzes.length,
-          itemBuilder: (context, index) {
-            final quiz = courseQuizzes[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                leading: CircleAvatar(
-                  backgroundColor: _course!.color.withOpacity(0.1),
-                  child: Icon(Icons.quiz, color: _course!.color),
-                ),
-                title: Text(
-                  quiz.name,
-                  style: AppTextStyles.cardTitle.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
+            if (courseQuizzes.isEmpty) {
+              return _buildEmptyState(
+                context,
+                Icons.quiz,
+                'No Quizzes',
+                'This course doesn\'t have any quizzes yet.',
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: courseQuizzes.length,
+              itemBuilder: (context, index) {
+                final quiz = courseQuizzes[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16), // Modern corner radius
                   ),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (quiz.description != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        quiz.description!,
-                        style: AppTextStyles.cardSubtitle.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: [
-                        _buildQuizInfoChip(
-                          context,
-                          Icons.question_answer,
-                          '${quiz.totalQuestions} Questions',
-                        ),
-                        _buildQuizInfoChip(
-                          context,
-                          Icons.timer,
-                          '${quiz.timeLimit?.inMinutes ?? 'No'} min',
-                        ),
-                        _buildQuizInfoChip(
-                          context,
-                          Icons.star,
-                          '${quiz.difficulty}/5',
-                        ),
-                      ],
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    leading: CircleAvatar(
+                      backgroundColor: _course!.color.withOpacity(0.1),
+                      child: Icon(Icons.quiz, color: _course!.color),
                     ),
-                    if (quiz.totalAttempts > 0) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.trending_up,
-                            size: 16,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(width: 4),
+                    title: Text(
+                      quiz.name,
+                      style: AppTextStyles.cardTitle.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (quiz.description != null) ...[
+                          const SizedBox(height: 4),
                           Text(
-                            'Avg Score: ${quiz.averageScore.toStringAsFixed(1)}%',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w600,
+                            quiz.description!,
+                            style: AppTextStyles.cardSubtitle.copyWith(
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
-                      ),
-                    ],
-                  ],
-                ),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'start':
-                        quizProvider.startQuiz(quiz.id);
-                        // TODO: Navigate to quiz screen
-                        break;
-                      case 'edit':
-                        // TODO: Navigate to edit quiz
-                        break;
-                      case 'delete':
-                        _showDeleteQuizDialog(context, quizProvider, quiz);
-                        break;
-                    }
-                  },
-                  itemBuilder:
-                      (context) => [
-                        const PopupMenuItem(
-                          value: 'start',
-                          child: Row(
-                            children: [
-                              Icon(Icons.play_arrow),
-                              SizedBox(width: 8),
-                              Text('Start Quiz'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit),
-                              SizedBox(width: 8),
-                              Text('Edit'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete),
-                              SizedBox(width: 8),
-                              Text('Delete'),
-                            ],
-                          ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
+                            _buildQuizInfoChip(
+                              context,
+                              Icons.question_answer,
+                              '${quiz.questionIds.length} Questions',
+                            ),
+                          ],
                         ),
                       ],
-                ),
-                onTap: () {
-                  quizProvider.startQuiz(quiz.id);
-                  // TODO: Navigate to quiz screen
-                },
-              ),
+                    ),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'start':
+                            quizProvider.startQuiz(quiz.id);
+                            // TODO: Navigate to quiz screen
+                            break;
+                          case 'edit':
+                            // TODO: Navigate to edit quiz
+                            break;
+                          case 'delete':
+                            _showDeleteQuizDialog(context, quizProvider, quiz);
+                            break;
+                        }
+                      },
+                      itemBuilder:
+                          (context) => [
+                            const PopupMenuItem(
+                              value: 'start',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.play_arrow),
+                                  SizedBox(width: 8),
+                                  Text('Start Quiz'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit),
+                                  SizedBox(width: 8),
+                                  Text('Edit'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete),
+                                  SizedBox(width: 8),
+                                  Text('Delete'),
+                                ],
+                              ),
+                            ),
+                          ],
+                    ),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      AppNavigation.goQuizTaking(context, quiz.id);
+                    },
+                  ),
+                );
+              },
             );
           },
         );
@@ -627,6 +797,21 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   Widget _buildMaterialsTab(BuildContext context) {
     return Consumer<CourseMaterialProvider>(
       builder: (context, materialProvider, child) {
+        // Load materials when tab is first shown (only once)
+        if (!_materialsLoaded && !materialProvider.isLoading) {
+          _materialsLoaded = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            materialProvider.loadMaterialsForCourse(widget.courseId);
+          });
+        }
+
+        if (materialProvider.isLoading && materialProvider.materials.isEmpty) {
+          return ListSkeletonLoading(
+            itemCount: 3,
+            itemBuilder: (context, index) => const CardSkeletonLoading(),
+          );
+        }
+
         final courseMaterials = materialProvider.getMaterialsByCourseId(
           widget.courseId,
         );
@@ -637,32 +822,31 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             Icons.attach_file,
             'No Materials',
             'This course doesn\'t have any materials yet.',
-            'Upload Material',
-            () {
-              AppNavigation.goUploadMaterials(context, courseId: widget.courseId);
-            },
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: courseMaterials.length,
-          itemBuilder: (context, index) {
-            final material = courseMaterials[index];
-            return CourseMaterialCard(
-              material: material,
-              onTap: () {
-                // TODO: Open material
-              },
-              onDownload: () {
-                materialProvider.markMaterialAsAccessed(material.id);
-                // TODO: Implement download
-              },
-              onDelete: () {
-                _showDeleteMaterialDialog(context, materialProvider, material);
-              },
-            );
+        return RefreshIndicator(
+          onRefresh: () {
+            HapticFeedback.lightImpact();
+            return materialProvider.loadMaterialsForCourse(widget.courseId);
           },
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: courseMaterials.length,
+            itemBuilder: (context, index) {
+              final material = courseMaterials[index];
+              return CourseMaterialCard(
+                material: material,
+                onDelete: () {
+                  _showDeleteMaterialDialog(
+                    context,
+                    materialProvider,
+                    material,
+                  );
+                },
+              );
+            },
+          ),
         );
       },
     );
@@ -672,43 +856,26 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     BuildContext context,
     IconData icon,
     String title,
-    String subtitle,
-    String actionText,
-    VoidCallback onAction,
-  ) {
+    String subtitle, [
+    String? actionText,
+    VoidCallback? onAction,
+  ]) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 64, color: colorScheme.onSurfaceVariant),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: AppTextStyles.headlineSmall.copyWith(
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: onAction,
-              icon: const Icon(Icons.add),
-              label: Text(actionText),
-            ),
-          ],
-        ),
+      child: EmptyStateWidget(
+        title: title,
+        message: subtitle,
+        icon: icon,
+        iconColor: colorScheme.primary,
+        onAction: onAction != null
+            ? () {
+                HapticFeedback.mediumImpact();
+                onAction();
+              }
+            : null,
+        actionText: actionText,
       ),
     );
   }
@@ -716,23 +883,42 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   void _showDeleteDeckDialog(
     BuildContext context,
     DeckProvider deckProvider,
-    deck,
+    data_models.DeckModel deck,
   ) {
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
             title: const Text('Delete Deck'),
-            content: Text('Are you sure you want to delete "${deck.title}"?'),
+            content: Text('Are you sure you want to delete "${deck.name}"?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Cancel'),
               ),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(context).pop();
-                  deckProvider.deleteDeck(deck.id);
+                  final success = await deckProvider.deleteDeck(deck.id);
+                  if (context.mounted) {
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Deck deleted successfully'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            deckProvider.error ?? 'Failed to delete deck',
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 },
                 child: const Text('Delete'),
               ),
@@ -752,7 +938,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
           (context) => AlertDialog(
             title: const Text('Delete Material'),
             content: Text(
-              'Are you sure you want to delete "${material.name}"?',
+              'Are you sure you want to delete "${material.name}"? This action cannot be undone.',
             ),
             actions: [
               TextButton(
@@ -760,9 +946,31 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                 child: const Text('Cancel'),
               ),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(context).pop();
-                  materialProvider.deleteMaterial(material.id);
+                  final success = await materialProvider.deleteMaterial(
+                    material.id,
+                  );
+                  if (context.mounted) {
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Deleted ${material.name}'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            materialProvider.error ??
+                                'Failed to delete material',
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 },
                 child: const Text('Delete'),
               ),
@@ -797,6 +1005,46 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             ],
           ),
     );
+  }
+
+  Widget? _buildFloatingActionButton(
+    BuildContext context,
+    ColorScheme colorScheme,
+  ) {
+    switch (_currentIndex) {
+      case 0: // Decks tab
+        return FloatingActionButton.extended(
+          onPressed: () {
+            AppNavigation.goAIGeneration(context, courseId: widget.courseId);
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Create Deck'),
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+        );
+      case 1: // Quizzes tab
+        return FloatingActionButton.extended(
+          onPressed: () {
+            AppNavigation.goAIGeneration(context, courseId: widget.courseId);
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Create Quiz'),
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+        );
+      case 2: // Materials tab
+        return FloatingActionButton.extended(
+          onPressed: () {
+            AppNavigation.goUploadMaterials(context, courseId: widget.courseId);
+          },
+          icon: const Icon(Icons.add),
+          label: const Text('Add Materials'),
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
+        );
+      default:
+        return null;
+    }
   }
 
   IconData _getIconData(String iconName) {

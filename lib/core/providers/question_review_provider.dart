@@ -3,11 +3,14 @@ import 'package:fsrs/fsrs.dart';
 import '../../data/models/question_model.dart';
 import '../services/fsrs_scheduler_service.dart';
 import '../services/review_log_service.dart';
+import '../../data/remote/supabase_client.dart';
+import '../../core/utils/logger.dart';
 
 /// Question Review Provider for managing FSRS-powered question reviews
 class QuestionReviewProvider extends ChangeNotifier {
   final FSRSSchedulerService _schedulerService = FSRSSchedulerService();
   final ReviewLogService _reviewLogService = ReviewLogService();
+  final SupabaseService _supabaseService = SupabaseService.instance;
 
   List<QuestionModel> _dueQuestions = [];
   List<QuestionModel> _newQuestions = [];
@@ -197,10 +200,36 @@ class QuestionReviewProvider extends ChangeNotifier {
       );
 
       // Save review log
-      await _reviewLogService.saveReviewLog(result.reviewLog);
+      try {
+        await _reviewLogService.saveReviewLog(result.reviewLog);
+        Logger.info('Review log saved');
+      } catch (e) {
+        Logger.warning('Failed to save review log (non-critical): $e');
+        // Continue even if review log save fails
+      }
 
-      // Update the question in local storage
-      // TODO: Update question in local storage
+      // Save the updated question with new FSRS state
+      if (result.updatedQuestion != null) {
+        try {
+          // Update local question state
+          final questionIndex = _dueQuestions.indexWhere(
+            (q) => q.id == _currentQuestion!.id,
+          );
+          if (questionIndex != -1) {
+            _dueQuestions[questionIndex] = result.updatedQuestion!;
+          }
+
+          // Update current question reference
+          _currentQuestion = result.updatedQuestion!;
+
+          // Save to database
+          await _supabaseService.updateQuestion(result.updatedQuestion!);
+          Logger.info('Question FSRS state saved to database');
+        } catch (e) {
+          Logger.warning('Failed to save question FSRS state: $e');
+          // Continue even if save fails - review log is already saved
+        }
+      }
 
       _isAnswered = true;
       _showAnswer = true;

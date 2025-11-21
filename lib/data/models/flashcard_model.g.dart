@@ -39,13 +39,14 @@ class FlashcardModelAdapter extends TypeAdapter<FlashcardModel> {
       consecutiveCorrectAnswers: fields[19] as int,
       totalReviews: fields[20] as int,
       averageResponseTime: fields[21] as double,
+      fsrsState: fields[22] as FSRSCardState?,
     );
   }
 
   @override
   void write(BinaryWriter writer, FlashcardModel obj) {
     writer
-      ..writeByte(22)
+      ..writeByte(23)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -89,7 +90,9 @@ class FlashcardModelAdapter extends TypeAdapter<FlashcardModel> {
       ..writeByte(20)
       ..write(obj.totalReviews)
       ..writeByte(21)
-      ..write(obj.averageResponseTime);
+      ..write(obj.averageResponseTime)
+      ..writeByte(22)
+      ..write(obj.fsrsState);
   }
 
   @override
@@ -233,6 +236,9 @@ FlashcardModel _$FlashcardModelFromJson(Map<String, dynamic> json) =>
       totalReviews: (json['totalReviews'] as num?)?.toInt() ?? 0,
       averageResponseTime:
           (json['averageResponseTime'] as num?)?.toDouble() ?? 0.0,
+      fsrsState: json['fsrsState'] == null
+          ? null
+          : FSRSCardState.fromJson(json['fsrsState'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$FlashcardModelToJson(FlashcardModel instance) =>
@@ -259,6 +265,7 @@ Map<String, dynamic> _$FlashcardModelToJson(FlashcardModel instance) =>
       'consecutiveCorrectAnswers': instance.consecutiveCorrectAnswers,
       'totalReviews': instance.totalReviews,
       'averageResponseTime': instance.averageResponseTime,
+      'fsrsState': instance.fsrsState,
     };
 
 const _$DifficultyLevelEnumMap = {

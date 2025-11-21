@@ -62,75 +62,78 @@ class AppTheme {
         ),
       ),
 
-      // Card theme
+      // Card theme (Enhanced with modern corner radius 16dp)
       cardTheme: CardTheme(
         color: AppColors.surface,
         elevation: 2,
         shadowColor: AppColors.shadow,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: const EdgeInsets.all(8),
       ),
 
-      // Elevated button theme
+      // Elevated button theme (Enhanced with modern corner radius 12dp)
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.textOnPrimary,
           elevation: 2,
           shadowColor: AppColors.shadow,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: AppTextStyles.button,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16), // Increased vertical padding for better touch target
+          minimumSize: const Size(48, 48), // Minimum touch target size
         ),
       ),
 
-      // Text button theme
+      // Text button theme (Enhanced with better touch targets)
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
           textStyle: AppTextStyles.button,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
 
-      // Outlined button theme
+      // Outlined button theme (Enhanced with modern corner radius 12dp)
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          side: const BorderSide(color: AppColors.primary, width: 1.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: AppTextStyles.button,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          minimumSize: const Size(48, 48), // Minimum touch target size
         ),
       ),
 
-      // Input decoration theme
+      // Input decoration theme (Enhanced with modern corner radius 12dp)
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceVariant,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.error, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 12,
+          vertical: 16, // Increased for better touch target
         ),
         labelStyle: AppTextStyles.bodyMedium,
         hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
@@ -158,7 +161,7 @@ class AppTheme {
       // Icon theme
       iconTheme: const IconThemeData(color: AppColors.textPrimary, size: 24),
 
-      // Floating action button theme
+      // Floating action button theme (Enhanced with modern corner radius)
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.textOnPrimary,
@@ -184,12 +187,12 @@ class AppTheme {
         space: 1,
       ),
 
-      // Chip theme
+      // Chip theme (Enhanced with modern corner radius)
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceVariant,
         labelStyle: AppTextStyles.bodySmall,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
 
       // Progress indicator theme
@@ -318,16 +321,16 @@ class AppTheme {
         ),
       ),
 
-      // Card theme - Using elevation-based surface colors
+      // Card theme - Using elevation-based surface colors (Enhanced with modern corner radius 16dp)
       cardTheme: CardTheme(
         color: AppColors.surfaceDarkElevation2, // Elevated surface
         elevation: 2,
         shadowColor: AppColors.shadowDarkTheme,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: const EdgeInsets.all(8),
       ),
 
-      // Elevated button theme - Accent color (10% of screen)
+      // Elevated button theme - Accent color (10% of screen) (Enhanced)
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryDarkTheme, // Desaturated primary
@@ -335,66 +338,70 @@ class AppTheme {
               AppColors.textOnPrimaryDark, // Pure white for contrast
           elevation: 2,
           shadowColor: AppColors.shadowDarkTheme,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: AppTextStyles.button,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          minimumSize: const Size(48, 48), // Minimum touch target size
         ),
       ),
 
-      // Text button theme - Accent color for text
+      // Text button theme - Accent color for text (Enhanced)
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primaryDarkTheme, // Desaturated primary
           textStyle: AppTextStyles.button,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
 
-      // Outlined button theme - Accent color for border and text
+      // Outlined button theme - Accent color for border and text (Enhanced)
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primaryDarkTheme, // Desaturated primary
           side: const BorderSide(
             color: AppColors.primaryDarkTheme,
+            width: 1.5,
           ), // Desaturated primary
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: AppTextStyles.button,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          minimumSize: const Size(48, 48), // Minimum touch target size
         ),
       ),
 
-      // Input decoration theme - Using proper text hierarchy
+      // Input decoration theme - Using proper text hierarchy (Enhanced with modern corner radius 12dp)
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor:
             AppColors.surfaceVariantDark, // Surface variant for input fields
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(
             color: AppColors.borderDarkTheme,
           ), // Subtle border
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(
             color: AppColors.borderDarkTheme,
           ), // Subtle border
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(
             color: AppColors.primaryDarkTheme,
             width: 2,
           ), // Primary accent color
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(
             color: AppColors.errorDark,
           ), // Error color
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(
             color: AppColors.errorDark,
             width: 2,
@@ -402,7 +409,7 @@ class AppTheme {
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 12,
+          vertical: 16, // Increased for better touch target
         ),
         labelStyle: AppTextStyles.bodyMedium.copyWith(
           color: AppColors.textSecondaryDark, // 70% white opacity for labels
@@ -440,7 +447,7 @@ class AppTheme {
         size: 24,
       ),
 
-      // Floating action button theme - Accent color (10% of screen)
+      // Floating action button theme - Accent color (10% of screen) (Enhanced)
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.primaryDarkTheme, // Desaturated primary
         foregroundColor: AppColors.textOnPrimaryDark, // Pure white for contrast
@@ -466,14 +473,14 @@ class AppTheme {
         space: 1,
       ),
 
-      // Chip theme - Using surface variant and proper text hierarchy
+      // Chip theme - Using surface variant and proper text hierarchy (Enhanced)
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceVariantDark, // Surface variant
         labelStyle: AppTextStyles.bodySmall.copyWith(
           color: AppColors.textSecondaryDark, // 70% white opacity
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
 
       // Progress indicator theme - Using accent colors

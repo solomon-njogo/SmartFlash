@@ -5,15 +5,11 @@ import '../../app/app_text_styles.dart';
 /// Course material card widget for displaying course materials
 class CourseMaterialCard extends StatelessWidget {
   final CourseMaterialModel material;
-  final VoidCallback? onTap;
-  final VoidCallback? onDownload;
   final VoidCallback? onDelete;
 
   const CourseMaterialCard({
     super.key,
     required this.material,
-    this.onTap,
-    this.onDownload,
     this.onDelete,
   });
 
@@ -26,12 +22,9 @@ class CourseMaterialCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
             children: [
               // File type icon
               Container(
@@ -121,78 +114,30 @@ class CourseMaterialCard extends StatelessWidget {
                 ),
               ),
               // Action buttons
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Download button
-                  if (material.isRemoteFile || material.isLocalFile)
-                    IconButton(
-                      onPressed: onDownload,
-                      icon: Icon(
-                        material.isDownloaded
-                            ? Icons.check_circle
-                            : Icons.download,
-                        color:
-                            material.isDownloaded
-                                ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant,
-                        size: 20,
-                      ),
-                      tooltip:
-                          material.isDownloaded ? 'Downloaded' : 'Download',
-                    ),
-                  // Menu button
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'download':
-                          onDownload?.call();
-                          break;
-                        case 'delete':
-                          onDelete?.call();
-                          break;
-                      }
-                    },
-                    itemBuilder:
-                        (context) => [
-                          PopupMenuItem(
-                            value: 'download',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  material.isDownloaded
-                                      ? Icons.check_circle
-                                      : Icons.download,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  material.isDownloaded
-                                      ? 'Downloaded'
-                                      : 'Download',
-                                ),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete, size: 16),
-                                SizedBox(width: 8),
-                                Text('Delete'),
-                              ],
-                            ),
-                          ),
+              if (onDelete != null)
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'delete') {
+                      onDelete?.call();
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, size: 16),
+                          SizedBox(width: 8),
+                          Text('Delete'),
                         ],
-                  ),
-                ],
-              ),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   IconData _getFileTypeIcon(FileType fileType) {

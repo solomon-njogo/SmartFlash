@@ -12,12 +12,6 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => AppNavigation.goSettings(context),
-          ),
-        ],
       ),
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
@@ -68,62 +62,6 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
 
-                // Profile options
-                _buildProfileOption(
-                  context,
-                  icon: Icons.edit,
-                  title: 'Edit Profile',
-                  subtitle: 'Update your personal information',
-                  onTap: () {
-                    // TODO: Implement edit profile
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Edit profile coming soon')),
-                    );
-                  },
-                ),
-                _buildProfileOption(
-                  context,
-                  icon: Icons.bar_chart,
-                  title: 'Statistics',
-                  subtitle: 'View your study progress',
-                  onTap: () => AppNavigation.goStatistics(context),
-                ),
-                _buildProfileOption(
-                  context,
-                  icon: Icons.settings,
-                  title: 'Settings',
-                  subtitle: 'App preferences and configuration',
-                  onTap: () => AppNavigation.goSettings(context),
-                ),
-                _buildProfileOption(
-                  context,
-                  icon: Icons.help_outline,
-                  title: 'Help & Support',
-                  subtitle: 'Get help and contact support',
-                  onTap: () {
-                    // TODO: Implement help & support
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Help & support coming soon'),
-                      ),
-                    );
-                  },
-                ),
-                _buildProfileOption(
-                  context,
-                  icon: Icons.info_outline,
-                  title: 'About',
-                  subtitle: 'App version and information',
-                  onTap: () {
-                    // TODO: Implement about
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('About coming soon')),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 32),
-
                 // Sign out button
                 SizedBox(
                   width: double.infinity,
@@ -143,25 +81,6 @@ class ProfileScreen extends StatelessWidget {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildProfileOption(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Icon(icon),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
       ),
     );
   }

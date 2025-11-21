@@ -5,6 +5,12 @@ import '../../core/utils/logger.dart';
 import '../models/user_model.dart';
 import '../models/flashcard_model.dart';
 import '../models/deck_model.dart';
+import '../models/quiz_model.dart';
+import '../models/question_model.dart';
+import '../models/deck_attempt_model.dart';
+import '../models/deck_attempt_card_result.dart';
+import '../models/quiz_attempt_model.dart';
+import '../models/quiz_attempt_answer_model.dart';
 
 /// Service for managing Supabase remote database operations
 class SupabaseService {
@@ -15,10 +21,19 @@ class SupabaseService {
 
   SupabaseClient? _client;
   SupabaseClient get client {
+    // If client is null but Supabase is already initialized, use it
     if (_client == null) {
-      throw Exception(
-        'SupabaseService not initialized. Call initialize() first.',
-      );
+      try {
+        _client = Supabase.instance.client;
+        _isInitialized = true;
+        Logger.info(
+          'SupabaseService using already initialized Supabase instance',
+        );
+      } catch (e) {
+        throw Exception(
+          'SupabaseService not initialized. Call initialize() first.',
+        );
+      }
     }
     return _client!;
   }
@@ -195,8 +210,24 @@ class SupabaseService {
     try {
       Logger.info('Creating deck: ${deck.name}');
 
+      // Only include fields that exist in the database schema
+      // Note: course_id may be TEXT or UUID depending on schema migration
+      // We'll include it as-is and let the database handle type conversion
+      final deckData = {
+        'id': deck.id,
+        'name': deck.name,
+        'description': deck.description,
+        'created_by': deck.createdBy,
+        'created_at': deck.createdAt.toIso8601String(),
+        'updated_at': deck.updatedAt.toIso8601String(),
+        'is_ai_generated': deck.isAIGenerated,
+        // Only include course_id if it's not null
+        // The database will handle type conversion if needed
+        if (deck.courseId != null) 'course_id': deck.courseId,
+      };
+
       final response =
-          await client.from('decks').insert(deck.toJson()).select().single();
+          await client.from('decks').insert(deckData).select().single();
 
       Logger.info('Deck created successfully');
       return DeckModel.fromJson(response);
@@ -211,10 +242,19 @@ class SupabaseService {
     try {
       Logger.info('Updating deck: ${deck.id}');
 
+      // Only include fields that exist in the database schema
+      final deckData = {
+        'name': deck.name,
+        'description': deck.description,
+        'updated_at': deck.updatedAt.toIso8601String(),
+        'is_ai_generated': deck.isAIGenerated,
+        if (deck.courseId != null) 'course_id': deck.courseId,
+      };
+
       final response =
           await client
               .from('decks')
-              .update(deck.toJson())
+              .update(deckData)
               .eq('id', deck.id)
               .select()
               .single();
@@ -248,33 +288,36 @@ class SupabaseService {
     }
   }
 
-  /// Get public decks
-  Future<List<DeckModel>> getPublicDecks({
-    int limit = 20,
-    int offset = 0,
-    String? searchQuery,
-  }) async {
+  /// Get decks for a course belonging to the current user
+  /// Queries decks directly by course_id and created_by
+  Future<List<DeckModel>> getCourseDecks(String courseId) async {
     try {
-      Logger.info('Getting public decks');
+      Logger.info('Getting decks for course: $courseId');
 
-      var query = client
+      if (!isAuthenticated) {
+        Logger.warning('User not authenticated, returning empty list');
+        return [];
+      }
+
+      final userId = currentUserId;
+      if (userId == null) {
+        Logger.warning('User ID is null, returning empty list');
+        return [];
+      }
+
+      final response = await client
           .from('decks')
           .select()
-          .eq('visibility', 'public')
-          .order('bookmark_count', ascending: false)
-          .range(offset, offset + limit - 1);
+          .eq('course_id', courseId)
+          .eq('created_by', userId)
+          .order('created_at', ascending: false);
 
-      // Note: Search functionality can be implemented with text search
-      // For now, basic filtering is done client-side if needed
-
-      final response = await query;
-
-      Logger.info('Public decks retrieved successfully');
+      Logger.info('Found ${response.length} decks for course $courseId (user: $userId)');
       return response
           .map<DeckModel>((json) => DeckModel.fromJson(json))
           .toList();
     } catch (e) {
-      Logger.error('Failed to get public decks: $e');
+      Logger.error('Failed to get course decks: $e');
       rethrow;
     }
   }
@@ -284,15 +327,17 @@ class SupabaseService {
     try {
       Logger.info('Creating flashcard: ${flashcard.id}');
 
+      // Use toDatabaseJson() to only include fields that exist in the database schema
       final response =
           await client
               .from('flashcards')
-              .insert(flashcard.toJson())
+              .insert(flashcard.toDatabaseJson())
               .select()
               .single();
 
       Logger.info('Flashcard created successfully');
-      return FlashcardModel.fromJson(response);
+      // Convert snake_case from database to camelCase for model
+      return FlashcardModel.fromDatabaseJson(response);
     } catch (e) {
       Logger.error('Failed to create flashcard: $e');
       rethrow;
@@ -304,39 +349,74 @@ class SupabaseService {
     try {
       Logger.info('Updating flashcard: ${flashcard.id}');
 
+      // Use toDatabaseJson() to only include fields that exist in the database schema
       final response =
           await client
               .from('flashcards')
-              .update(flashcard.toJson())
+              .update(flashcard.toDatabaseJson())
               .eq('id', flashcard.id)
               .select()
               .single();
 
       Logger.info('Flashcard updated successfully');
-      return FlashcardModel.fromJson(response);
+      // Convert snake_case from database to camelCase for model
+      return FlashcardModel.fromDatabaseJson(response);
     } catch (e) {
       Logger.error('Failed to update flashcard: $e');
       rethrow;
     }
   }
 
-  /// Get flashcards for a deck
+  /// Get flashcards for a deck belonging to the current user
   Future<List<FlashcardModel>> getDeckFlashcards(String deckId) async {
     try {
       Logger.info('Getting flashcards for deck: $deckId');
+
+      if (!isAuthenticated) {
+        Logger.warning('User not authenticated, returning empty list');
+        return [];
+      }
+
+      final userId = currentUserId;
+      if (userId == null) {
+        Logger.warning('User ID is null, returning empty list');
+        return [];
+      }
 
       final response = await client
           .from('flashcards')
           .select()
           .eq('deck_id', deckId)
+          .eq('created_by', userId)
           .order('created_at', ascending: true);
 
-      Logger.info('Deck flashcards retrieved successfully');
+      Logger.info('Deck flashcards retrieved successfully (user: $userId)');
       return response
-          .map<FlashcardModel>((json) => FlashcardModel.fromJson(json))
+          .map<FlashcardModel>((json) => FlashcardModel.fromDatabaseJson(json))
           .toList();
     } catch (e) {
       Logger.error('Failed to get deck flashcards: $e');
+      rethrow;
+    }
+  }
+
+  /// Get user's flashcards
+  Future<List<FlashcardModel>> getUserFlashcards(String userId) async {
+    try {
+      Logger.info('Getting flashcards for user: $userId');
+
+      final response = await client
+          .from('flashcards')
+          .select()
+          .eq('created_by', userId)
+          .order('updated_at', ascending: false);
+
+      Logger.info('User flashcards retrieved successfully');
+      return response
+          .map<FlashcardModel>((json) => FlashcardModel.fromDatabaseJson(json))
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get user flashcards: $e');
       rethrow;
     }
   }
@@ -365,6 +445,503 @@ class SupabaseService {
       Logger.info('Flashcard deleted successfully');
     } catch (e) {
       Logger.error('Failed to delete flashcard: $e');
+      rethrow;
+    }
+  }
+
+  /// Create a new deck attempt
+  Future<DeckAttemptModel> createDeckAttempt(DeckAttemptModel attempt) async {
+    try {
+      Logger.info('Creating deck attempt: ${attempt.id}');
+
+      final response =
+          await client
+              .from('deck_attempts')
+              .insert(attempt.toDatabaseJson())
+              .select()
+              .single();
+
+      Logger.info('Deck attempt created successfully');
+      return DeckAttemptModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to create deck attempt: $e');
+      rethrow;
+    }
+  }
+
+  /// Update deck attempt
+  Future<DeckAttemptModel> updateDeckAttempt(DeckAttemptModel attempt) async {
+    try {
+      Logger.info('Updating deck attempt: ${attempt.id}');
+
+      final response =
+          await client
+              .from('deck_attempts')
+              .update(attempt.toDatabaseJson())
+              .eq('id', attempt.id)
+              .select()
+              .single();
+
+      Logger.info('Deck attempt updated successfully');
+      return DeckAttemptModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to update deck attempt: $e');
+      rethrow;
+    }
+  }
+
+  /// Get deck attempts for a user
+  Future<List<DeckAttemptModel>> getUserDeckAttempts(String userId) async {
+    try {
+      Logger.info('Getting deck attempts for user: $userId');
+
+      final response = await client
+          .from('deck_attempts')
+          .select()
+          .eq('user_id', userId)
+          .order('started_at', ascending: false);
+
+      Logger.info('User deck attempts retrieved successfully');
+      return response
+          .map<DeckAttemptModel>(
+            (json) => DeckAttemptModel.fromDatabaseJson(json),
+          )
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get user deck attempts: $e');
+      rethrow;
+    }
+  }
+
+  /// Get deck attempts for a specific deck
+  Future<List<DeckAttemptModel>> getDeckAttempts(String deckId) async {
+    try {
+      Logger.info('Getting deck attempts for deck: $deckId');
+
+      if (!isAuthenticated) {
+        Logger.warning('User not authenticated, returning empty list');
+        return [];
+      }
+
+      final response = await client
+          .from('deck_attempts')
+          .select()
+          .eq('deck_id', deckId)
+          .eq('user_id', currentUserId!)
+          .order('started_at', ascending: false);
+
+      Logger.info('Deck attempts retrieved successfully');
+      return response
+          .map<DeckAttemptModel>(
+            (json) => DeckAttemptModel.fromDatabaseJson(json),
+          )
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get deck attempts: $e');
+      rethrow;
+    }
+  }
+
+  /// Get next attempt number for a user/deck combination
+  Future<int> getNextAttemptNumber(String deckId, String userId) async {
+    try {
+      Logger.info(
+        'Getting next attempt number for deck: $deckId, user: $userId',
+      );
+
+      final response = await client
+          .from('deck_attempts')
+          .select('attempt_number')
+          .eq('deck_id', deckId)
+          .eq('user_id', userId)
+          .order('attempt_number', ascending: false)
+          .limit(1);
+
+      if (response.isEmpty) {
+        return 1;
+      }
+
+      final lastAttemptNumber = response[0]['attempt_number'] as int;
+      return lastAttemptNumber + 1;
+    } catch (e) {
+      Logger.error('Failed to get next attempt number: $e');
+      // Return 1 as default if query fails
+      return 1;
+    }
+  }
+
+  /// Save card result for a deck attempt
+  Future<DeckAttemptCardResult> saveCardResult(
+    DeckAttemptCardResult cardResult,
+  ) async {
+    try {
+      Logger.info('Saving card result: ${cardResult.id}');
+
+      final response =
+          await client
+              .from('deck_attempt_card_results')
+              .insert(cardResult.toDatabaseJson())
+              .select()
+              .single();
+
+      Logger.info('Card result saved successfully');
+      return DeckAttemptCardResult.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to save card result: $e');
+      rethrow;
+    }
+  }
+
+  /// Get card results for a deck attempt
+  Future<List<DeckAttemptCardResult>> getAttemptCardResults(
+    String attemptId,
+  ) async {
+    try {
+      Logger.info('Getting card results for attempt: $attemptId');
+
+      final response = await client
+          .from('deck_attempt_card_results')
+          .select()
+          .eq('attempt_id', attemptId)
+          .order('order', ascending: true);
+
+      Logger.info('Card results retrieved successfully');
+      return response
+          .map<DeckAttemptCardResult>(
+            (json) => DeckAttemptCardResult.fromDatabaseJson(json),
+          )
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get card results: $e');
+      rethrow;
+    }
+  }
+
+  /// Create a new quiz attempt
+  Future<QuizAttemptModel> createQuizAttempt(QuizAttemptModel attempt) async {
+    try {
+      Logger.info('Creating quiz attempt: ${attempt.id}');
+
+      final response =
+          await client
+              .from('quiz_attempts')
+              .insert(attempt.toDatabaseJson())
+              .select()
+              .single();
+
+      Logger.info('Quiz attempt created successfully');
+      return QuizAttemptModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to create quiz attempt: $e');
+      rethrow;
+    }
+  }
+
+  /// Update quiz attempt
+  Future<QuizAttemptModel> updateQuizAttempt(QuizAttemptModel attempt) async {
+    try {
+      Logger.info('Updating quiz attempt: ${attempt.id}');
+
+      final response =
+          await client
+              .from('quiz_attempts')
+              .update(attempt.toDatabaseJson())
+              .eq('id', attempt.id)
+              .select()
+              .single();
+
+      Logger.info('Quiz attempt updated successfully');
+      return QuizAttemptModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to update quiz attempt: $e');
+      rethrow;
+    }
+  }
+
+  /// Get quiz attempts for a user
+  Future<List<QuizAttemptModel>> getUserQuizAttempts(String userId) async {
+    try {
+      Logger.info('Getting quiz attempts for user: $userId');
+
+      final response = await client
+          .from('quiz_attempts')
+          .select()
+          .eq('user_id', userId)
+          .order('started_at', ascending: false);
+
+      Logger.info('User quiz attempts retrieved successfully');
+      return response
+          .map<QuizAttemptModel>(
+            (json) => QuizAttemptModel.fromDatabaseJson(json),
+          )
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get user quiz attempts: $e');
+      rethrow;
+    }
+  }
+
+  /// Get quiz attempts for a quiz
+  Future<List<QuizAttemptModel>> getQuizAttempts(String quizId) async {
+    try {
+      Logger.info('Getting quiz attempts for quiz: $quizId');
+
+      final response = await client
+          .from('quiz_attempts')
+          .select()
+          .eq('quiz_id', quizId)
+          .order('started_at', ascending: false);
+
+      Logger.info('Quiz attempts retrieved successfully');
+      return response
+          .map<QuizAttemptModel>(
+            (json) => QuizAttemptModel.fromDatabaseJson(json),
+          )
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get quiz attempts: $e');
+      rethrow;
+    }
+  }
+
+  /// Get next quiz attempt number
+  Future<int> getNextQuizAttemptNumber(String quizId, String userId) async {
+    try {
+      Logger.info(
+        'Getting next attempt number for quiz: $quizId, user: $userId',
+      );
+
+      final response = await client
+          .from('quiz_attempts')
+          .select('attempt_number')
+          .eq('quiz_id', quizId)
+          .eq('user_id', userId)
+          .order('attempt_number', ascending: false)
+          .limit(1);
+
+      if (response.isEmpty) {
+        return 1;
+      }
+
+      final lastAttemptNumber = response[0]['attempt_number'] as int;
+      return lastAttemptNumber + 1;
+    } catch (e) {
+      Logger.error('Failed to get next quiz attempt number: $e');
+      // Return 1 as default if query fails
+      return 1;
+    }
+  }
+
+  /// Save answer for a quiz attempt
+  Future<QuizAttemptAnswerModel> saveQuizAnswer(
+    QuizAttemptAnswerModel answer,
+  ) async {
+    try {
+      Logger.info('Saving quiz answer: ${answer.id}');
+
+      final response =
+          await client
+              .from('quiz_attempt_answers')
+              .insert(answer.toDatabaseJson())
+              .select()
+              .single();
+
+      Logger.info('Quiz answer saved successfully');
+      return QuizAttemptAnswerModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to save quiz answer: $e');
+      rethrow;
+    }
+  }
+
+  /// Get answers for a quiz attempt
+  Future<List<QuizAttemptAnswerModel>> getAttemptAnswers(
+    String attemptId,
+  ) async {
+    try {
+      Logger.info('Getting answers for attempt: $attemptId');
+
+      final response = await client
+          .from('quiz_attempt_answers')
+          .select()
+          .eq('attempt_id', attemptId)
+          .order('order', ascending: true);
+
+      Logger.info('Attempt answers retrieved successfully');
+      return response
+          .map<QuizAttemptAnswerModel>(
+            (json) => QuizAttemptAnswerModel.fromDatabaseJson(json),
+          )
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get attempt answers: $e');
+      rethrow;
+    }
+  }
+
+  /// Create a new quiz
+  Future<QuizModel> createQuiz(QuizModel quiz) async {
+    try {
+      Logger.info('Creating quiz: ${quiz.id}');
+
+      // Use toDatabaseJson() to only include fields that exist in the database schema
+      final response =
+          await client
+              .from('quizzes')
+              .insert(quiz.toDatabaseJson())
+              .select()
+              .single();
+
+      Logger.info('Quiz created successfully');
+      // Convert snake_case from database to camelCase for model
+      return QuizModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to create quiz: $e');
+      rethrow;
+    }
+  }
+
+  /// Create a new question
+  Future<QuestionModel> createQuestion(QuestionModel question) async {
+    try {
+      Logger.info('Creating question: ${question.id}');
+
+      // Use toDatabaseJson() to only include fields that exist in the database schema
+      final response =
+          await client
+              .from('questions')
+              .insert(question.toDatabaseJson())
+              .select()
+              .single();
+
+      Logger.info('Question created successfully');
+      // Convert snake_case from database to camelCase for model
+      return QuestionModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to create question: $e');
+      rethrow;
+    }
+  }
+
+  /// Update an existing question
+  Future<QuestionModel> updateQuestion(QuestionModel question) async {
+    try {
+      Logger.info('Updating question: ${question.id}');
+
+      // Use toDatabaseJson() to only include fields that exist in the database schema
+      final response =
+          await client
+              .from('questions')
+              .update(question.toDatabaseJson())
+              .eq('id', question.id)
+              .select()
+              .single();
+
+      Logger.info('Question updated successfully');
+      // Convert snake_case from database to camelCase for model
+      return QuestionModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to update question: $e');
+      rethrow;
+    }
+  }
+
+  /// Get user's quizzes
+  Future<List<QuizModel>> getUserQuizzes(String userId) async {
+    try {
+      Logger.info('Getting quizzes for user: $userId');
+
+      final response = await client
+          .from('quizzes')
+          .select()
+          .eq('created_by', userId)
+          .order('updated_at', ascending: false);
+
+      Logger.info('User quizzes retrieved successfully');
+      return response
+          .map<QuizModel>((json) => QuizModel.fromDatabaseJson(json))
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get user quizzes: $e');
+      rethrow;
+    }
+  }
+
+  /// Get quizzes for a course belonging to the current user
+  /// Queries quizzes directly by course_id and created_by
+  Future<List<QuizModel>> getCourseQuizzes(String courseId) async {
+    try {
+      Logger.info('Getting quizzes for course: $courseId');
+
+      if (!isAuthenticated) {
+        Logger.warning('User not authenticated, returning empty list');
+        return [];
+      }
+
+      final userId = currentUserId;
+      if (userId == null) {
+        Logger.warning('User ID is null, returning empty list');
+        return [];
+      }
+
+      final response = await client
+          .from('quizzes')
+          .select()
+          .eq('course_id', courseId)
+          .eq('created_by', userId)
+          .order('created_at', ascending: false);
+
+      Logger.info('Course quizzes retrieved successfully (user: $userId)');
+      return response
+          .map<QuizModel>((json) => QuizModel.fromDatabaseJson(json))
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get course quizzes: $e');
+      rethrow;
+    }
+  }
+
+  /// Get questions for a quiz belonging to the current user
+  Future<List<QuestionModel>> getQuizQuestions(String quizId) async {
+    try {
+      Logger.info('Getting questions for quiz: $quizId');
+
+      if (!isAuthenticated) {
+        Logger.warning('User not authenticated, returning empty list');
+        return [];
+      }
+
+      final userId = currentUserId;
+      if (userId == null) {
+        Logger.warning('User ID is null, returning empty list');
+        return [];
+      }
+
+      // Verify the quiz belongs to the user before returning questions
+      final quizCheck = await client
+          .from('quizzes')
+          .select('id')
+          .eq('id', quizId)
+          .eq('created_by', userId)
+          .maybeSingle();
+
+      if (quizCheck == null) {
+        Logger.warning('Quiz $quizId does not belong to user $userId');
+        return [];
+      }
+
+      final response = await client
+          .from('questions')
+          .select()
+          .eq('quiz_id', quizId)
+          .order('order', ascending: true);
+
+      Logger.info('Quiz questions retrieved successfully (user: $userId)');
+      return response
+          .map<QuestionModel>((json) => QuestionModel.fromDatabaseJson(json))
+          .toList();
+    } catch (e) {
+      Logger.error('Failed to get quiz questions: $e');
       rethrow;
     }
   }

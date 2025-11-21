@@ -1,6 +1,5 @@
 import 'package:hive/hive.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'flashcard_model.dart';
 import 'fsrs_card_state_model.dart';
 
 part 'question_model.g.dart';
@@ -46,43 +45,22 @@ class QuestionModel extends HiveObject {
   final String? explanation;
 
   @HiveField(7)
-  final int points;
-
-  @HiveField(8)
-  final Duration? timeLimit;
-
-  @HiveField(9)
-  final String? imageUrl;
-
-  @HiveField(10)
-  final String? audioUrl;
-
-  @HiveField(11)
   final int order;
 
-  @HiveField(12)
+  @HiveField(8)
   final DateTime createdAt;
 
-  @HiveField(13)
+  @HiveField(9)
   final DateTime updatedAt;
 
-  @HiveField(14)
+  @HiveField(10)
   final String? createdBy;
 
-  @HiveField(15)
+  @HiveField(11)
   final bool isAIGenerated;
 
-  @HiveField(16)
-  final Map<String, dynamic>? metadata;
-
-  @HiveField(17)
-  final List<String>? tags;
-
-  @HiveField(18)
-  final DifficultyLevel difficulty;
-
   // FSRS algorithm state (optional)
-  @HiveField(19)
+  @HiveField(12)
   final FSRSCardState? fsrsState;
 
   QuestionModel({
@@ -93,27 +71,102 @@ class QuestionModel extends HiveObject {
     this.options = const [],
     required this.correctAnswers,
     this.explanation,
-    this.points = 1,
-    this.timeLimit,
-    this.imageUrl,
-    this.audioUrl,
     required this.order,
     required this.createdAt,
     required this.updatedAt,
     this.createdBy,
     this.isAIGenerated = false,
-    this.metadata,
-    this.tags,
-    this.difficulty = DifficultyLevel.medium,
     this.fsrsState,
   });
 
-  /// Create QuestionModel from JSON
+  /// Create QuestionModel from JSON (camelCase)
   factory QuestionModel.fromJson(Map<String, dynamic> json) =>
       _$QuestionModelFromJson(json);
 
-  /// Convert QuestionModel to JSON
+  /// Convert QuestionModel to JSON (camelCase)
   Map<String, dynamic> toJson() => _$QuestionModelToJson(this);
+
+  /// Create QuestionModel from database JSON (snake_case)
+  factory QuestionModel.fromDatabaseJson(Map<String, dynamic> json) {
+    return QuestionModel(
+      id: json['id'] as String,
+      quizId: json['quiz_id'] as String,
+      questionText: json['question_text'] as String,
+      questionType: _questionTypeFromString(json['question_type'] as String),
+      options:
+          (json['options'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      correctAnswers:
+          (json['correct_answers'] as List<dynamic>)
+              .map((e) => e.toString())
+              .toList(),
+      explanation: json['explanation'] as String?,
+      order: json['order'] as int,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdBy: json['created_by'] as String?,
+      isAIGenerated: json['is_ai_generated'] as bool? ?? false,
+      fsrsState: json['fsrs_state'] != null
+          ? FSRSCardState.fromJson(json['fsrs_state'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  /// Convert QuestionModel to database-compatible JSON (snake_case)
+  /// Only includes fields that exist in the database schema
+  Map<String, dynamic> toDatabaseJson() {
+    return {
+      'id': id,
+      'quiz_id': quizId,
+      'question_text': questionText,
+      'question_type': _questionTypeToString(questionType),
+      'options': options,
+      'correct_answers': correctAnswers,
+      'explanation': explanation,
+      'order': order,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'created_by': createdBy,
+      'is_ai_generated': isAIGenerated,
+      if (fsrsState != null) 'fsrs_state': fsrsState!.toJson(),
+    };
+  }
+
+  /// Helper to convert string to QuestionType enum
+  static QuestionType _questionTypeFromString(String value) {
+    switch (value) {
+      case 'multipleChoice':
+        return QuestionType.multipleChoice;
+      case 'trueFalse':
+        return QuestionType.trueFalse;
+      case 'fillInTheBlank':
+        return QuestionType.fillInTheBlank;
+      case 'matching':
+        return QuestionType.matching;
+      case 'shortAnswer':
+        return QuestionType.shortAnswer;
+      default:
+        return QuestionType.multipleChoice;
+    }
+  }
+
+  /// Helper to convert QuestionType enum to string
+  static String _questionTypeToString(QuestionType type) {
+    switch (type) {
+      case QuestionType.multipleChoice:
+        return 'multipleChoice';
+      case QuestionType.trueFalse:
+        return 'trueFalse';
+      case QuestionType.fillInTheBlank:
+        return 'fillInTheBlank';
+      case QuestionType.matching:
+        return 'matching';
+      case QuestionType.shortAnswer:
+        return 'shortAnswer';
+    }
+  }
 
   /// Create a copy of QuestionModel with updated fields
   QuestionModel copyWith({
@@ -124,18 +177,11 @@ class QuestionModel extends HiveObject {
     List<String>? options,
     List<String>? correctAnswers,
     String? explanation,
-    int? points,
-    Duration? timeLimit,
-    String? imageUrl,
-    String? audioUrl,
     int? order,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? createdBy,
     bool? isAIGenerated,
-    Map<String, dynamic>? metadata,
-    List<String>? tags,
-    DifficultyLevel? difficulty,
     FSRSCardState? fsrsState,
   }) {
     return QuestionModel(
@@ -146,18 +192,11 @@ class QuestionModel extends HiveObject {
       options: options ?? this.options,
       correctAnswers: correctAnswers ?? this.correctAnswers,
       explanation: explanation ?? this.explanation,
-      points: points ?? this.points,
-      timeLimit: timeLimit ?? this.timeLimit,
-      imageUrl: imageUrl ?? this.imageUrl,
-      audioUrl: audioUrl ?? this.audioUrl,
       order: order ?? this.order,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       createdBy: createdBy ?? this.createdBy,
       isAIGenerated: isAIGenerated ?? this.isAIGenerated,
-      metadata: metadata ?? this.metadata,
-      tags: tags ?? this.tags,
-      difficulty: difficulty ?? this.difficulty,
       fsrsState: fsrsState ?? this.fsrsState,
     );
   }

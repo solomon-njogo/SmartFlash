@@ -2,6 +2,7 @@ import 'package:hive/hive.dart';
 import 'package:fsrs/fsrs.dart';
 import '../../data/models/review_log_model.dart';
 import '../../data/local/hive_service.dart';
+import '../../data/repositories/review_log_repository.dart';
 
 /// Review Log Service for managing review history
 class ReviewLogService {
@@ -10,15 +11,25 @@ class ReviewLogService {
   ReviewLogService._internal();
 
   late Box<ReviewLogModel> _reviewLogBox;
+  final ReviewLogRepository _repository = ReviewLogRepository();
 
   /// Initialize the service
   void initialize() {
     _reviewLogBox = HiveService.instance.reviewLogBox;
   }
 
-  /// Save a review log
+  /// Save a review log (both locally and to database)
   Future<void> saveReviewLog(ReviewLogModel reviewLog) async {
+    // Save locally
     await _reviewLogBox.put(reviewLog.id, reviewLog);
+    
+    // Save to database
+    try {
+      await _repository.saveReviewLog(reviewLog);
+    } catch (e) {
+      // Log error but don't fail - local save succeeded
+      // TODO: Queue for retry or sync later
+    }
   }
 
   /// Get review log by ID
