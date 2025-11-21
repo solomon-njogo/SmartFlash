@@ -4,7 +4,6 @@ import '../../../core/providers/ai_generation_provider.dart';
 import '../../../core/providers/course_material_provider.dart';
 import '../../../data/models/course_material_model.dart';
 import '../../../app/app_text_styles.dart';
-import '../../../app/theme/app_colors.dart';
 import '../../../app/router.dart';
 
 /// Screen for AI content generation
@@ -63,10 +62,17 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI Content Generation'),
-        backgroundColor: AppColors.primary,
+        title: Text(
+          'AI Content Generation',
+          style: AppTextStyles.titleLarge.copyWith(
+            color: theme.appBarTheme.foregroundColor ?? colorScheme.onSurface,
+          ),
+        ),
       ),
       body: Consumer<AIGenerationProvider>(
         builder: (context, provider, child) {
@@ -92,22 +98,25 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
               }
             });
           }
+          final colorScheme = Theme.of(context).colorScheme;
+
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Material Selection
-                _buildMaterialSelection(provider),
-                const SizedBox(height: 24),
+                _buildMaterialSelection(provider, colorScheme),
+                const SizedBox(height: 16),
 
                 // Generation Type Selection
-                _buildGenerationTypeSelection(),
-                const SizedBox(height: 24),
+                _buildGenerationTypeSelection(colorScheme),
+                const SizedBox(height: 16),
 
                 // Generation Options
-                if (_generationType != null) _buildGenerationOptions(),
-                const SizedBox(height: 24),
+                if (_generationType != null)
+                  _buildGenerationOptions(colorScheme),
+                const SizedBox(height: 16),
 
                 // Generate Button
                 if (_selectedMaterials.isNotEmpty && _generationType != null)
@@ -132,7 +141,10 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     );
   }
 
-  Widget _buildMaterialSelection(AIGenerationProvider provider) {
+  Widget _buildMaterialSelection(
+    AIGenerationProvider provider,
+    ColorScheme colorScheme,
+  ) {
     final materialsProvider = context.watch<CourseMaterialProvider>();
     var materials =
         materialsProvider.materials
@@ -152,18 +164,25 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Select Documents', style: AppTextStyles.titleLarge),
-            const SizedBox(height: 12),
+            Text(
+              'Select Documents',
+              style: AppTextStyles.titleLarge.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 10),
             if (materials.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
                   'No PDF or Word documents available${widget.courseId != null ? ' for this course' : ''}',
-                  style: AppTextStyles.bodyMedium,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               )
             else
@@ -175,12 +194,12 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                         () => _showDocumentSelectionDialog(materials, provider),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
+                        horizontal: 14,
+                        vertical: 14,
                       ),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade400),
-                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: colorScheme.outline),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -193,7 +212,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                                   Text(
                                     'Choose documents',
                                     style: AppTextStyles.bodyMedium.copyWith(
-                                      color: Colors.grey.shade600,
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                                   )
                                 else
@@ -201,7 +220,9 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                                     _selectedMaterials.length == 1
                                         ? _selectedMaterials.first.name
                                         : '${_selectedMaterials.length} documents selected',
-                                    style: AppTextStyles.bodyMedium,
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: colorScheme.onSurface,
+                                    ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 if (_selectedMaterials.isNotEmpty &&
@@ -213,7 +234,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                                           .map((m) => m.name)
                                           .join(', '),
                                       style: AppTextStyles.bodySmall.copyWith(
-                                        color: Colors.grey.shade600,
+                                        color: colorScheme.onSurfaceVariant,
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
@@ -224,7 +245,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                           ),
                           Icon(
                             Icons.arrow_drop_down,
-                            color: Colors.grey.shade600,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ],
                       ),
@@ -252,10 +273,10 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                                   });
                                 },
                                 deleteIcon: const Icon(Icons.close, size: 18),
-                                backgroundColor: AppColors.primary.withOpacity(
-                                  0.1,
+                                backgroundColor: colorScheme.primaryContainer,
+                                labelStyle: TextStyle(
+                                  color: colorScheme.onPrimaryContainer,
                                 ),
-                                labelStyle: TextStyle(color: AppColors.primary),
                               );
                             }).toList(),
                       ),
@@ -268,7 +289,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                 child: Text(
                   provider.error ?? 'Some document texts are not available',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.error,
+                    color: colorScheme.error,
                   ),
                 ),
               ),
@@ -282,9 +303,13 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     List<CourseMaterialModel> materials,
     AIGenerationProvider provider,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -305,7 +330,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                           width: 40,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
+                            color: colorScheme.outlineVariant,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -320,7 +345,9 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                             children: [
                               Text(
                                 'Select Documents',
-                                style: AppTextStyles.titleLarge,
+                                style: AppTextStyles.titleLarge.copyWith(
+                                  color: colorScheme.onSurface,
+                                ),
                               ),
                               Row(
                                 children: [
@@ -344,7 +371,10 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                                     ),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.close),
+                                    icon: Icon(
+                                      Icons.close,
+                                      color: colorScheme.onSurface,
+                                    ),
                                     onPressed: () => Navigator.pop(context),
                                   ),
                                 ],
@@ -352,7 +382,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                             ],
                           ),
                         ),
-                        const Divider(),
+                        Divider(color: colorScheme.outlineVariant),
                         // Document list
                         Expanded(
                           child: ListView.builder(
@@ -367,19 +397,23 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                               return CheckboxListTile(
                                 title: Text(
                                   material.name,
-                                  style: AppTextStyles.bodyMedium,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: colorScheme.onSurface,
+                                  ),
                                 ),
                                 subtitle: Row(
                                   children: [
                                     Icon(
                                       _getFileTypeIcon(material.fileType),
                                       size: 16,
-                                      color: Colors.grey.shade600,
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
                                       _getFileTypeLabel(material.fileType),
-                                      style: AppTextStyles.bodySmall,
+                                      style: AppTextStyles.bodySmall.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -393,7 +427,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                                     }
                                   });
                                 },
-                                activeColor: AppColors.primary,
+                                activeColor: colorScheme.primary,
                               );
                             },
                           ),
@@ -402,10 +436,10 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: colorScheme.surface,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: colorScheme.shadow.withOpacity(0.1),
                                 blurRadius: 10,
                                 offset: const Offset(0, -2),
                               ),
@@ -421,8 +455,8 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     color:
                                         _selectedMaterials.isEmpty
-                                            ? Colors.grey.shade600
-                                            : AppColors.primary,
+                                            ? colorScheme.onSurfaceVariant
+                                            : colorScheme.primary,
                                   ),
                                 ),
                               ),
@@ -436,7 +470,8 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                                   Navigator.pop(context);
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
+                                  backgroundColor: colorScheme.primary,
+                                  foregroundColor: colorScheme.onPrimary,
                                 ),
                                 child: const Text('Apply'),
                               ),
@@ -475,20 +510,28 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     }
   }
 
-  Widget _buildGenerationTypeSelection() {
+  Widget _buildGenerationTypeSelection(ColorScheme colorScheme) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Content Type', style: AppTextStyles.titleLarge),
-            const SizedBox(height: 12),
+            Text(
+              'Content Type',
+              style: AppTextStyles.titleLarge.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
                   child: RadioListTile<GenerationType>(
-                    title: const Text('Flashcards'),
+                    title: Text(
+                      'Flashcards',
+                      style: TextStyle(color: colorScheme.onSurface),
+                    ),
                     value: GenerationType.flashcards,
                     groupValue: _generationType,
                     onChanged: (value) {
@@ -500,7 +543,10 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                 ),
                 Expanded(
                   child: RadioListTile<GenerationType>(
-                    title: const Text('Quiz'),
+                    title: Text(
+                      'Quiz',
+                      style: TextStyle(color: colorScheme.onSurface),
+                    ),
                     value: GenerationType.quiz,
                     groupValue: _generationType,
                     onChanged: (value) {
@@ -518,10 +564,10 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     );
   }
 
-  Widget _buildGenerationOptions() {
+  Widget _buildGenerationOptions(ColorScheme colorScheme) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -529,32 +575,39 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
               _generationType == GenerationType.flashcards
                   ? 'Flashcard Options'
                   : 'Quiz Options',
-              style: AppTextStyles.titleMedium,
+              style: AppTextStyles.titleMedium.copyWith(
+                color: colorScheme.onSurface,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             // Info about fixed count
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: AppColors.primary),
+                  Icon(
+                    Icons.info_outline,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       _generationType == GenerationType.flashcards
                           ? 'Will generate 10 flashcards'
                           : 'Will generate 10 multiple choice questions',
-                      style: AppTextStyles.bodyMedium,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: colorScheme.onPrimaryContainer,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             // Difficulty
             DropdownButtonFormField<String>(
               value: _difficulty,
@@ -579,6 +632,8 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
   }
 
   Widget _buildGenerateButton(AIGenerationProvider provider) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return ElevatedButton(
       onPressed:
           provider.isGenerating
@@ -600,27 +655,32 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                 }
               },
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
+        padding: const EdgeInsets.symmetric(vertical: 14),
       ),
       child: Text(
         'Generate ${_generationType == GenerationType.flashcards ? 'Flashcards' : 'Quiz'}',
-        style: AppTextStyles.titleMedium.copyWith(color: Colors.white),
+        style: AppTextStyles.titleMedium.copyWith(color: colorScheme.onPrimary),
       ),
     );
   }
 
   Widget _buildProgressIndicator(AIGenerationProvider provider) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           children: [
             LinearProgressIndicator(value: provider.progress),
             const SizedBox(height: 8),
             Text(
               'Generating... ${(provider.progress * 100).toInt()}%',
-              style: AppTextStyles.bodyMedium,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: colorScheme.onSurface,
+              ),
             ),
           ],
         ),
@@ -629,39 +689,46 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
   }
 
   Widget _buildErrorDisplay(String error) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
-      color: AppColors.error.withOpacity(0.1),
+      color: colorScheme.errorContainer,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Text(
           error,
-          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: colorScheme.onErrorContainer,
+          ),
         ),
       ),
     );
   }
 
   Widget _buildSuccessActions(AIGenerationProvider provider) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
-      color: AppColors.success.withOpacity(0.1),
+      color: colorScheme.tertiaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           children: [
             Text(
               'Generation Complete!',
               style: AppTextStyles.titleMedium.copyWith(
-                color: AppColors.success,
+                color: colorScheme.onTertiaryContainer,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             ElevatedButton(
               onPressed: () {
                 // Navigate to review screen
                 AppNavigation.goAIReview(context);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
               ),
               child: const Text('Review & Accept'),
             ),
