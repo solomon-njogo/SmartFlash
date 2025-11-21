@@ -72,11 +72,18 @@ class CourseRemoteDataSource {
   /// Fetch all courses visible to the current authenticated user.
   /// Returns an empty list if none are found.
   Future<List<CourseModel>> fetchCourses() async {
+    final String? userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      Logger.warning('User not authenticated, returning empty course list');
+      return [];
+    }
+
     try {
       final response =
           await _client
                   .from('courses')
                   .select()
+                  .eq('created_by', userId)
                   .order('created_at', ascending: false)
               as List<dynamic>?;
 
@@ -90,7 +97,7 @@ class CourseRemoteDataSource {
               )
               .toList();
 
-      Logger.logDatabase('SELECT', 'courses', data: {'count': courses.length});
+      Logger.logDatabase('SELECT', 'courses', data: {'count': courses.length, 'user_id': userId});
       return courses;
     } on PostgrestException catch (e, st) {
       Logger.error(
