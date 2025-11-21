@@ -83,8 +83,15 @@ class QuizReviewScheduleService {
           .limit(1)
           .maybeSingle();
 
-      // Upsert the schedule
-      await client.from('quiz_review_schedules').upsert({
+      // Check if schedule already exists
+      final existingSchedule = await client
+          .from('quiz_review_schedules')
+          .select('id')
+          .eq('quiz_id', quizId)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      final scheduleData = {
         'quiz_id': quizId,
         'user_id': userId,
         'next_review_date': earliestDueDate?.toIso8601String(),
@@ -94,7 +101,19 @@ class QuizReviewScheduleService {
         'questions_relearning_count': questionsRelearningCount,
         'last_attempt_id': latestAttempt?['id'],
         'last_attempt_at': latestAttempt?['completed_at'],
-      });
+      };
+
+      if (existingSchedule != null) {
+        // Update existing schedule
+        await client
+            .from('quiz_review_schedules')
+            .update(scheduleData)
+            .eq('quiz_id', quizId)
+            .eq('user_id', userId);
+      } else {
+        // Insert new schedule
+        await client.from('quiz_review_schedules').insert(scheduleData);
+      }
 
       Logger.info('Quiz review schedule updated: $quizId');
     } catch (e, stackTrace) {

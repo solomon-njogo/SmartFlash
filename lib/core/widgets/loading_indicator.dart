@@ -29,21 +29,22 @@ class LoadingIndicator extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: size ?? 24,
-              height: size ?? 24,
+              width: size ?? 32, // Slightly larger default
+              height: size ?? 32,
               child: CircularProgressIndicator(
-                strokeWidth: 2,
+                strokeWidth: 3, // Slightly thicker for better visibility
                 valueColor: AlwaysStoppedAnimation<Color>(
                   color ?? theme.colorScheme.primary,
                 ),
               ),
             ),
             if (showMessage && message != null) ...[
-              const SizedBox(height: AppConstants.smallPadding),
+              const SizedBox(height: 16),
               Text(
                 message!,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  fontSize: 16, // Ensure readable size
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -55,7 +56,7 @@ class LoadingIndicator extends StatelessWidget {
   }
 }
 
-/// Full screen loading indicator
+/// Full screen loading indicator (Enhanced with backdrop)
 class FullScreenLoadingIndicator extends StatelessWidget {
   final String? message;
   final Color? backgroundColor;
@@ -71,9 +72,10 @@ class FullScreenLoadingIndicator extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      color: backgroundColor ?? theme.colorScheme.surface.withOpacity(0.8),
+      color: backgroundColor ??
+          theme.colorScheme.surface.withOpacity(0.95), // More opaque
       child: LoadingIndicator(
-        size: 32,
+        size: 40, // Larger for full screen
         message: message ?? 'Loading...',
         showMessage: true,
       ),
@@ -151,7 +153,7 @@ class LinearLoadingIndicator extends StatelessWidget {
   }
 }
 
-/// Skeleton loading widget
+/// Skeleton loading widget (Enhanced with shimmer effect)
 class SkeletonLoading extends StatefulWidget {
   final double? width;
   final double? height;
@@ -181,11 +183,14 @@ class _SkeletonLoadingState extends State<SkeletonLoading>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1200), // Faster, smoother animation
       vsync: this,
     );
     _animation = Tween<double>(begin: -1.0, end: 2.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
     );
     _animationController.repeat();
   }
@@ -199,6 +204,7 @@ class _SkeletonLoadingState extends State<SkeletonLoading>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return AnimatedBuilder(
       animation: _animation,
@@ -209,21 +215,30 @@ class _SkeletonLoadingState extends State<SkeletonLoading>
           decoration: BoxDecoration(
             borderRadius:
                 widget.borderRadius ??
-                BorderRadius.circular(AppConstants.borderRadius),
+                BorderRadius.circular(16), // Modern corner radius
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
               colors: [
-                widget.baseColor ?? theme.colorScheme.surfaceVariant,
-                widget.highlightColor ?? theme.colorScheme.surface,
-                widget.baseColor ?? theme.colorScheme.surfaceVariant,
+                widget.baseColor ??
+                    (isDark
+                        ? theme.colorScheme.surfaceVariant
+                        : theme.colorScheme.surfaceVariant),
+                widget.highlightColor ??
+                    (isDark
+                        ? theme.colorScheme.surface
+                        : theme.colorScheme.surface),
+                widget.baseColor ??
+                    (isDark
+                        ? theme.colorScheme.surfaceVariant
+                        : theme.colorScheme.surfaceVariant),
               ],
               stops:
                   [
-                    _animation.value - 0.3,
-                    _animation.value,
-                    _animation.value + 0.3,
-                  ].map((stop) => stop.clamp(0.0, 1.0)).toList(),
+                    (_animation.value - 0.5).clamp(0.0, 1.0),
+                    _animation.value.clamp(0.0, 1.0),
+                    (_animation.value + 0.5).clamp(0.0, 1.0),
+                  ],
             ),
           ),
         );
@@ -232,7 +247,7 @@ class _SkeletonLoadingState extends State<SkeletonLoading>
   }
 }
 
-/// Card skeleton loading
+/// Card skeleton loading (Enhanced)
 class CardSkeletonLoading extends StatelessWidget {
   final double? width;
   final double? height;
@@ -242,19 +257,150 @@ class CardSkeletonLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16), // Modern corner radius
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SkeletonLoading(width: width ?? double.infinity, height: 20),
-            const SizedBox(height: AppConstants.smallPadding),
-            SkeletonLoading(width: (width ?? 200) * 0.7, height: 16),
-            const SizedBox(height: AppConstants.smallPadding),
-            SkeletonLoading(width: (width ?? 200) * 0.5, height: 14),
+            Row(
+              children: [
+                SkeletonLoading(
+                  width: 48,
+                  height: 48,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SkeletonLoading(
+                        width: width ?? double.infinity,
+                        height: 20,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      const SizedBox(height: 8),
+                      SkeletonLoading(
+                        width: (width ?? 200) * 0.7,
+                        height: 16,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SkeletonLoading(
+              width: (width ?? 200) * 0.5,
+              height: 14,
+              borderRadius: BorderRadius.circular(8),
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Course card skeleton loading
+class CourseCardSkeleton extends StatelessWidget {
+  const CourseCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                SkeletonLoading(
+                  width: 48,
+                  height: 48,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SkeletonLoading(
+                        width: double.infinity,
+                        height: 20,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      const SizedBox(height: 8),
+                      SkeletonLoading(
+                        width: 200,
+                        height: 16,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                SkeletonLoading(
+                  width: 60,
+                  height: 24,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                const SizedBox(width: 12),
+                SkeletonLoading(
+                  width: 60,
+                  height: 24,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                const SizedBox(width: 12),
+                SkeletonLoading(
+                  width: 60,
+                  height: 24,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// List skeleton loading
+class ListSkeletonLoading extends StatelessWidget {
+  final int itemCount;
+  final Widget Function(BuildContext, int) itemBuilder;
+
+  const ListSkeletonLoading({
+    super.key,
+    this.itemCount = 3,
+    Widget Function(BuildContext, int)? itemBuilder,
+  }) : itemBuilder = itemBuilder ?? _defaultItemBuilder;
+
+  static Widget _defaultItemBuilder(BuildContext context, int index) {
+    return const CardSkeletonLoading();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: itemCount,
+      itemBuilder: itemBuilder,
     );
   }
 }

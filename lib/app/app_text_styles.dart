@@ -34,12 +34,13 @@ class AppTextStyles {
     color: AppColors.textPrimary,
   );
 
-  // Headline styles
+  // Headline styles (Enhanced with better line heights)
   static const TextStyle headlineLarge = TextStyle(
     fontFamily: fontFamily,
     fontSize: 32,
     fontWeight: FontWeight.w400,
     letterSpacing: 0,
+    height: 1.2,
     color: AppColors.textPrimary,
   );
 
@@ -48,6 +49,7 @@ class AppTextStyles {
     fontSize: 28,
     fontWeight: FontWeight.w400,
     letterSpacing: 0,
+    height: 1.3,
     color: AppColors.textPrimary,
   );
 
@@ -56,56 +58,63 @@ class AppTextStyles {
     fontSize: 24,
     fontWeight: FontWeight.w400,
     letterSpacing: 0,
+    height: 1.4,
     color: AppColors.textPrimary,
   );
 
-  // Title styles
+  // Title styles (Enhanced with better line heights)
   static const TextStyle titleLarge = TextStyle(
     fontFamily: fontFamily,
     fontSize: 22,
-    fontWeight: FontWeight.w400,
+    fontWeight: FontWeight.w500, // Increased weight for better hierarchy
     letterSpacing: 0,
+    height: 1.4,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle titleMedium = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 16,
+    fontSize: 18, // Increased from 16 for better hierarchy
     fontWeight: FontWeight.w500,
     letterSpacing: 0.15,
+    height: 1.4,
     color: AppColors.textPrimary,
   );
 
   static const TextStyle titleSmall = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 14,
+    fontSize: 16, // Increased from 14 for better readability
     fontWeight: FontWeight.w500,
     letterSpacing: 0.1,
+    height: 1.4,
     color: AppColors.textPrimary,
   );
 
-  // Body styles
+  // Body styles (Enhanced for readability - minimum 16pt, line height 1.4-1.6)
   static const TextStyle bodyLarge = TextStyle(
     fontFamily: fontFamily,
     fontSize: 16,
     fontWeight: FontWeight.w400,
     letterSpacing: 0.5,
+    height: 1.5, // Line height for better readability
     color: AppColors.textPrimary,
   );
 
   static const TextStyle bodyMedium = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 14,
+    fontSize: 16, // Increased from 14 to 16pt for better readability
     fontWeight: FontWeight.w400,
     letterSpacing: 0.25,
+    height: 1.5, // Line height for better readability
     color: AppColors.textPrimary,
   );
 
   static const TextStyle bodySmall = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 12,
+    fontSize: 14, // Increased from 12 to 14pt for better readability
     fontWeight: FontWeight.w400,
     letterSpacing: 0.4,
+    height: 1.4, // Line height
     color: AppColors.textSecondary,
   );
 
@@ -181,14 +190,16 @@ class AppTextStyles {
     fontSize: 20,
     fontWeight: FontWeight.w500,
     letterSpacing: 0,
+    height: 1.5, // Better line height for flashcards
     color: AppColors.textPrimary,
   );
 
   static const TextStyle flashcardHint = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 14,
+    fontSize: 16, // Increased from 14 for better readability
     fontWeight: FontWeight.w400,
     letterSpacing: 0.25,
+    height: 1.4,
     color: AppColors.textHint,
   );
 }

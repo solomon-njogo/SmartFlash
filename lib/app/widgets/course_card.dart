@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/course_model.dart';
 import '../../app/app_text_styles.dart';
@@ -29,30 +30,42 @@ class CourseCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // Modern corner radius
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap?.call();
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header with icon and menu
               Row(
                 children: [
-                  // Course icon
+                  // Course icon (Enhanced)
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 56, // Larger for better visibility
+                    height: 56,
                     decoration: BoxDecoration(
-                      color: course.color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      color: course.color.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(14), // Modern corner radius
+                      boxShadow: [
+                        BoxShadow(
+                          color: course.color.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Icon(
                       _getIconData(course.iconName ?? 'folder'),
                       color: course.color,
-                      size: 24,
+                      size: 28,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -183,18 +196,19 @@ class CourseCard extends StatelessWidget {
                             course.tags.take(3).map((tag) {
                               return Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
+                                  horizontal: 10,
+                                  vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: course.color.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
+                                  color: course.color.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(12), // Modern corner radius
                                 ),
                                 child: Text(
                                   tag,
                                   style: AppTextStyles.bodySmall.copyWith(
                                     color: course.color,
-                                    fontSize: 10,
+                                    fontSize: 12, // Increased for better readability
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               );
@@ -203,23 +217,35 @@ class CourseCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                   ],
-                  // Last accessed indicator
+                  // Last accessed indicator (Enhanced)
                   if (course.isRecentlyAccessed)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
+                        horizontal: 8,
+                        vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: colorScheme.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: colorScheme.primary.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12), // Modern corner radius
                       ),
-                      child: Text(
-                        'Recent',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: colorScheme.primary,
-                          fontSize: 10,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 12,
+                            color: colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Recent',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: colorScheme.primary,
+                              fontSize: 12, // Increased for better readability
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -227,6 +253,7 @@ class CourseCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

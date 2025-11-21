@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../data/models/course_material_model.dart';
 import '../../data/remote/material_remote.dart';
 import '../../core/utils/logger.dart';
@@ -264,57 +262,6 @@ class CourseMaterialProvider extends ChangeNotifier {
     } catch (e) {
       _setError(e.toString());
       return false;
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  /// Download a material to local storage
-  Future<String?> downloadMaterial(String materialId) async {
-    try {
-      _setLoading(true);
-      _clearError();
-
-      final material = getMaterialById(materialId);
-      if (material == null || material.fileUrl == null) {
-        _setError('Material or file URL not found');
-        return null;
-      }
-
-      // Download file from storage
-      final remote = MaterialRemoteDataSource();
-      final fileBytes = await remote.downloadMaterial(material.fileUrl!);
-
-      // Get app documents directory
-      final directory = await getApplicationDocumentsDirectory();
-      final materialsDir = Directory('${directory.path}/materials');
-      if (!await materialsDir.exists()) {
-        await materialsDir.create(recursive: true);
-      }
-
-      // Save file
-      final filePath = '${materialsDir.path}/${material.name}';
-      final file = File(filePath);
-      await file.writeAsBytes(fileBytes);
-
-      // Update material with local path
-      final updatedMaterial = material.copyWith(
-        filePath: filePath,
-        isDownloaded: true,
-        downloadCount: material.downloadCount + 1,
-        lastAccessedAt: DateTime.now(),
-      );
-
-      final index = _materials.indexWhere((m) => m.id == materialId);
-      if (index != -1) {
-        _materials[index] = updatedMaterial;
-        notifyListeners();
-      }
-
-      return filePath;
-    } catch (e) {
-      _setError(e.toString());
-      return null;
     } finally {
       _setLoading(false);
     }
