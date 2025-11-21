@@ -855,33 +855,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
               final material = courseMaterials[index];
               return CourseMaterialCard(
                 material: material,
-                onTap: () {
-                  AppNavigation.goMaterialPreview(context, material.id);
-                },
-                onDownload: () async {
-                  materialProvider.markMaterialAsAccessed(material.id);
-                  final filePath = await materialProvider.downloadMaterial(
-                    material.id,
-                  );
-                  if (filePath != null && mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Material downloaded successfully'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } else if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          materialProvider.error ??
-                              'Failed to download material',
-                        ),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                },
                 onDelete: () {
                   _showDeleteMaterialDialog(
                     context,

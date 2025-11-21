@@ -177,7 +177,7 @@ class HomeScreen extends StatelessWidget {
         iconColor: colorScheme.primary,
         onAction: () {
           HapticFeedback.mediumImpact();
-          _showCreateBottomSheet(context);
+          AppNavigation.goCreateCourse(context);
         },
         actionText: 'Create Course',
       ),
@@ -263,17 +263,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Shows the create new bottom sheet
-  void _showCreateBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const _CreateBottomSheet(),
-    );
-  }
-
-  /// Builds the create new button matching the inspiration design
+  /// Builds the create course button matching the inspiration design
   /// Appears visually floating (pill over content) with no Scaffold background
   Widget _buildCreateButton(BuildContext context) {
     final theme = Theme.of(context);
@@ -303,7 +293,7 @@ class HomeScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(28),
           onTap: () {
             HapticFeedback.mediumImpact();
-            _showCreateBottomSheet(context);
+            AppNavigation.goCreateCourse(context);
           },
           child: const SizedBox(
             height: 56,
@@ -334,7 +324,7 @@ class _CreateButtonContent extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Text(
-          'Create New',
+          'Create Course',
           style: AppTextStyles.button.copyWith(color: cs.background),
         ),
       ],
@@ -342,184 +332,3 @@ class _CreateButtonContent extends StatelessWidget {
   }
 }
 
-class _CreateBottomSheet extends StatelessWidget {
-  const _CreateBottomSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)), // Modern corner radius
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 24,
-            offset: const Offset(0, -8),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Handle bar
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Title
-            Text(
-              'Create New',
-              style: AppTextStyles.headlineSmall.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Choose how you\'d like to create your course',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Options
-            _buildOption(
-              context,
-              icon: Icons.folder,
-              title: 'Create Course',
-              subtitle: 'Create a new course to organize your content',
-              onTap: () {
-                Navigator.pop(context);
-                AppNavigation.goCreateCourse(context);
-              },
-            ),
-            const SizedBox(height: 16),
-            _buildOption(
-              context,
-              icon: Icons.upload_file,
-              title: 'Upload Materials',
-              subtitle: 'Upload documents and files to a course',
-              onTap: () {
-                Navigator.pop(context);
-                AppNavigation.goUploadMaterials(context);
-              },
-            ),
-            const SizedBox(height: 16),
-            _buildOption(
-              context,
-              icon: Icons.library_books,
-              title: 'Create Deck',
-              subtitle: 'Create flashcards for studying',
-              onTap: () {
-                Navigator.pop(context);
-                AppNavigation.goCreateDeck(context);
-              },
-            ),
-            const SizedBox(height: 16),
-            _buildOption(
-              context,
-              icon: Icons.quiz,
-              title: 'Create Quiz',
-              subtitle: 'Create quizzes to test knowledge',
-              onTap: () {
-                Navigator.pop(context);
-                AppNavigation.goAIGeneration(context);
-              },
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOption(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16), // Modern corner radius
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
-            borderRadius: BorderRadius.circular(16), // Modern corner radius
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 56, // Larger for better visibility
-                height: 56,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(14), // Modern corner radius
-                ),
-                child: Icon(icon, color: colorScheme.primary, size: 28),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: AppTextStyles.titleMedium.copyWith(
-                        color: colorScheme.onSurface,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: colorScheme.onSurface.withOpacity(0.5),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

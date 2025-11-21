@@ -13,7 +13,6 @@ import '../features/course/views/create_course_screen.dart' as feature_course;
 import '../features/course/views/edit_course_screen.dart'
     as feature_course_edit;
 import '../features/materials/views/upload_materials_screen.dart';
-import '../features/materials/views/material_preview_screen.dart';
 import '../features/ai/views/ai_generation_screen.dart';
 import '../features/ai/views/ai_content_review_screen.dart';
 import '../features/deck/views/deck_details_screen.dart';
@@ -240,14 +239,6 @@ class AppRouter {
         },
       ),
       GoRoute(
-        path: '/material-preview/:materialId',
-        name: 'materialPreview',
-        builder: (context, state) {
-          final materialId = state.pathParameters['materialId']!;
-          return MaterialPreviewScreen(materialId: materialId);
-        },
-      ),
-      GoRoute(
         path: '/ai-generation',
         name: 'aiGeneration',
         builder: (context, state) {
@@ -458,10 +449,6 @@ class AppNavigation {
     }
   }
 
-  /// Navigate to material preview
-  static void goMaterialPreview(BuildContext context, String materialId) {
-    push(context, '/material-preview/$materialId');
-  }
 
   /// Navigate to AI generation
   static void goAIGeneration(BuildContext context, {String? courseId}) {
