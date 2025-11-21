@@ -14,8 +14,15 @@ import '../../../app/widgets/upcoming_reviews_section.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/error_widget.dart' as custom_error;
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final GlobalKey _reviewsKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +37,12 @@ class HomeScreen extends StatelessWidget {
                 Column(
                   children: [
                     _buildHeader(context),
-                    Expanded(child: _buildMainContent(context, courseProvider)),
+                    Expanded(
+                      child: _buildMainContent(
+                        context,
+                        courseProvider,
+                      ),
+                    ),
                   ],
                 ),
                 // Floating create button overlay
@@ -196,11 +208,25 @@ class HomeScreen extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () async {
         HapticFeedback.lightImpact();
-        await Future.wait([
+        final refreshTasks = <Future<void>>[
           courseProvider.refreshCourses(),
           materialProvider.refreshMaterials(),
           deckProvider.refreshDecks(),
-        ]);
+        ];
+        
+        // Refresh upcoming reviews if the widget is mounted
+        if (_reviewsKey.currentState != null) {
+          try {
+            final refreshFuture = (_reviewsKey.currentState as dynamic).refresh();
+            if (refreshFuture is Future<void>) {
+              refreshTasks.add(refreshFuture);
+            }
+          } catch (e) {
+            // Ignore if refresh method doesn't exist
+          }
+        }
+        
+        await Future.wait(refreshTasks);
       },
       child: ListView(
         padding: EdgeInsets.zero,
@@ -208,7 +234,7 @@ class HomeScreen extends StatelessWidget {
           // Upcoming reviews section
           if (userId != null)
             UpcomingReviewsSection(
-              key: ValueKey('upcoming_reviews_$userId'),
+              key: _reviewsKey,
               userId: userId,
             ),
           // Courses list

@@ -23,11 +23,27 @@ class _UpcomingReviewsSectionState extends State<UpcomingReviewsSection> {
   List<Map<String, dynamic>> _upcomingReviews = [];
   bool _isLoading = true;
   bool _isExpanded = true;
+  bool _hasLoadedOnce = false;
+  DateTime? _lastRefreshTime;
 
   @override
   void initState() {
     super.initState();
     _loadUpcomingReviews();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh when widget becomes visible again (e.g., returning from review)
+    // Only refresh if we've loaded once and it's been at least 1 second since last refresh
+    if (_hasLoadedOnce && mounted) {
+      final now = DateTime.now();
+      if (_lastRefreshTime == null ||
+          now.difference(_lastRefreshTime!).inSeconds > 1) {
+        _loadUpcomingReviews();
+      }
+    }
   }
 
   /// Public method to refresh upcoming reviews
@@ -70,10 +86,14 @@ class _UpcomingReviewsSectionState extends State<UpcomingReviewsSection> {
       setState(() {
         _upcomingReviews = allReviews.take(5).toList();
         _isLoading = false;
+        _hasLoadedOnce = true;
+        _lastRefreshTime = DateTime.now();
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
+        _hasLoadedOnce = true;
+        _lastRefreshTime = DateTime.now();
       });
     }
   }

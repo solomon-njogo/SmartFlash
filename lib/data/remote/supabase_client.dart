@@ -823,6 +823,29 @@ class SupabaseService {
     }
   }
 
+  /// Update an existing question
+  Future<QuestionModel> updateQuestion(QuestionModel question) async {
+    try {
+      Logger.info('Updating question: ${question.id}');
+
+      // Use toDatabaseJson() to only include fields that exist in the database schema
+      final response =
+          await client
+              .from('questions')
+              .update(question.toDatabaseJson())
+              .eq('id', question.id)
+              .select()
+              .single();
+
+      Logger.info('Question updated successfully');
+      // Convert snake_case from database to camelCase for model
+      return QuestionModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to update question: $e');
+      rethrow;
+    }
+  }
+
   /// Get user's quizzes
   Future<List<QuizModel>> getUserQuizzes(String userId) async {
     try {

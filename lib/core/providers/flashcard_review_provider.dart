@@ -210,6 +210,27 @@ class FlashcardReviewProvider extends ChangeNotifier {
         // Continue even if review log save fails - it's not critical for the attempt
       }
 
+      // Save the updated flashcard with new FSRS state
+      if (result.updatedFlashcard != null) {
+        try {
+          // Update local card state
+          final cardIndex = _dueCards.indexWhere((c) => c.id == _currentCard!.id);
+          if (cardIndex != -1) {
+            _dueCards[cardIndex] = result.updatedFlashcard!;
+          }
+          
+          // Update current card reference
+          _currentCard = result.updatedFlashcard!;
+          
+          // Save to database
+          await _supabaseService.updateFlashcard(result.updatedFlashcard!);
+          Logger.info('Flashcard FSRS state saved to database');
+        } catch (e) {
+          Logger.warning('Failed to save flashcard FSRS state: $e');
+          // Continue even if save fails - review log is already saved
+        }
+      }
+
       // Store card result locally (don't save to database yet)
       // Store the current card ID before we potentially null it
       final currentCardId = _currentCard!.id;
@@ -261,9 +282,6 @@ class FlashcardReviewProvider extends ChangeNotifier {
         
         Logger.info('Attempt stats updated - Studied: $updatedCardsStudied, Again: $updatedCardsAgain, Hard: $updatedCardsHard, Good: $updatedCardsGood, Easy: $updatedCardsEasy');
       }
-
-      // Update the card in local storage
-      // TODO: Update card in local storage
 
       // Move to next card
       _currentCardIndex++;
