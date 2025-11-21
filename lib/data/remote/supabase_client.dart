@@ -288,8 +288,8 @@ class SupabaseService {
     }
   }
 
-  /// Get decks for a course
-  /// Queries decks directly by course_id
+  /// Get decks for a course belonging to the current user
+  /// Queries decks directly by course_id and created_by
   Future<List<DeckModel>> getCourseDecks(String courseId) async {
     try {
       Logger.info('Getting decks for course: $courseId');
@@ -299,13 +299,20 @@ class SupabaseService {
         return [];
       }
 
+      final userId = currentUserId;
+      if (userId == null) {
+        Logger.warning('User ID is null, returning empty list');
+        return [];
+      }
+
       final response = await client
           .from('decks')
           .select()
           .eq('course_id', courseId)
+          .eq('created_by', userId)
           .order('created_at', ascending: false);
 
-      Logger.info('Found ${response.length} decks for course $courseId');
+      Logger.info('Found ${response.length} decks for course $courseId (user: $userId)');
       return response
           .map<DeckModel>((json) => DeckModel.fromJson(json))
           .toList();
@@ -360,18 +367,30 @@ class SupabaseService {
     }
   }
 
-  /// Get flashcards for a deck
+  /// Get flashcards for a deck belonging to the current user
   Future<List<FlashcardModel>> getDeckFlashcards(String deckId) async {
     try {
       Logger.info('Getting flashcards for deck: $deckId');
+
+      if (!isAuthenticated) {
+        Logger.warning('User not authenticated, returning empty list');
+        return [];
+      }
+
+      final userId = currentUserId;
+      if (userId == null) {
+        Logger.warning('User ID is null, returning empty list');
+        return [];
+      }
 
       final response = await client
           .from('flashcards')
           .select()
           .eq('deck_id', deckId)
+          .eq('created_by', userId)
           .order('created_at', ascending: true);
 
-      Logger.info('Deck flashcards retrieved successfully');
+      Logger.info('Deck flashcards retrieved successfully (user: $userId)');
       return response
           .map<FlashcardModel>((json) => FlashcardModel.fromDatabaseJson(json))
           .toList();
@@ -804,6 +823,29 @@ class SupabaseService {
     }
   }
 
+  /// Update an existing question
+  Future<QuestionModel> updateQuestion(QuestionModel question) async {
+    try {
+      Logger.info('Updating question: ${question.id}');
+
+      // Use toDatabaseJson() to only include fields that exist in the database schema
+      final response =
+          await client
+              .from('questions')
+              .update(question.toDatabaseJson())
+              .eq('id', question.id)
+              .select()
+              .single();
+
+      Logger.info('Question updated successfully');
+      // Convert snake_case from database to camelCase for model
+      return QuestionModel.fromDatabaseJson(response);
+    } catch (e) {
+      Logger.error('Failed to update question: $e');
+      rethrow;
+    }
+  }
+
   /// Get user's quizzes
   Future<List<QuizModel>> getUserQuizzes(String userId) async {
     try {
@@ -825,8 +867,8 @@ class SupabaseService {
     }
   }
 
-  /// Get quizzes for a course
-  /// Queries quizzes directly by course_id
+  /// Get quizzes for a course belonging to the current user
+  /// Queries quizzes directly by course_id and created_by
   Future<List<QuizModel>> getCourseQuizzes(String courseId) async {
     try {
       Logger.info('Getting quizzes for course: $courseId');
@@ -836,13 +878,20 @@ class SupabaseService {
         return [];
       }
 
+      final userId = currentUserId;
+      if (userId == null) {
+        Logger.warning('User ID is null, returning empty list');
+        return [];
+      }
+
       final response = await client
           .from('quizzes')
           .select()
           .eq('course_id', courseId)
+          .eq('created_by', userId)
           .order('created_at', ascending: false);
 
-      Logger.info('Course quizzes retrieved successfully');
+      Logger.info('Course quizzes retrieved successfully (user: $userId)');
       return response
           .map<QuizModel>((json) => QuizModel.fromDatabaseJson(json))
           .toList();
@@ -852,10 +901,34 @@ class SupabaseService {
     }
   }
 
-  /// Get questions for a quiz
+  /// Get questions for a quiz belonging to the current user
   Future<List<QuestionModel>> getQuizQuestions(String quizId) async {
     try {
       Logger.info('Getting questions for quiz: $quizId');
+
+      if (!isAuthenticated) {
+        Logger.warning('User not authenticated, returning empty list');
+        return [];
+      }
+
+      final userId = currentUserId;
+      if (userId == null) {
+        Logger.warning('User ID is null, returning empty list');
+        return [];
+      }
+
+      // Verify the quiz belongs to the user before returning questions
+      final quizCheck = await client
+          .from('quizzes')
+          .select('id')
+          .eq('id', quizId)
+          .eq('created_by', userId)
+          .maybeSingle();
+
+      if (quizCheck == null) {
+        Logger.warning('Quiz $quizId does not belong to user $userId');
+        return [];
+      }
 
       final response = await client
           .from('questions')
@@ -863,7 +936,7 @@ class SupabaseService {
           .eq('quiz_id', quizId)
           .order('order', ascending: true);
 
-      Logger.info('Quiz questions retrieved successfully');
+      Logger.info('Quiz questions retrieved successfully (user: $userId)');
       return response
           .map<QuestionModel>((json) => QuestionModel.fromDatabaseJson(json))
           .toList();

@@ -309,22 +309,29 @@ class MaterialRemoteDataSource {
     }
   }
 
-  /// Fetches all materials for a specific course
+  /// Fetches all materials for a specific course belonging to the current user
   Future<List<Map<String, dynamic>>> fetchMaterialsByCourseId(
     String courseId,
   ) async {
+    final String? userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      Logger.warning('User not authenticated, returning empty materials list');
+      return [];
+    }
+
     try {
-      Logger.logDatabase('SELECT', _tableName, data: {'course_id': courseId});
+      Logger.logDatabase('SELECT', _tableName, data: {'course_id': courseId, 'user_id': userId});
       final response = await _client
           .from(_tableName)
           .select()
           .eq('course_id', courseId)
+          .eq('uploaded_by', userId)
           .order('uploaded_at', ascending: false);
 
       final List<Map<String, dynamic>> materials =
           (response as List).map((e) => Map<String, dynamic>.from(e)).toList();
       Logger.info(
-        'Fetched ${materials.length} materials for course $courseId',
+        'Fetched ${materials.length} materials for course $courseId (user: $userId)',
         tag: 'Database',
       );
       return materials;
@@ -347,19 +354,26 @@ class MaterialRemoteDataSource {
     }
   }
 
-  /// Fetches all materials for all courses
+  /// Fetches all materials for all courses belonging to the current user
   Future<List<Map<String, dynamic>>> fetchAllMaterials() async {
+    final String? userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      Logger.warning('User not authenticated, returning empty materials list');
+      return [];
+    }
+
     try {
-      Logger.logDatabase('SELECT', _tableName, data: {'all': true});
+      Logger.logDatabase('SELECT', _tableName, data: {'all': true, 'user_id': userId});
       final response = await _client
           .from(_tableName)
           .select()
+          .eq('uploaded_by', userId)
           .order('uploaded_at', ascending: false);
 
       final List<Map<String, dynamic>> materials =
           (response as List).map((e) => Map<String, dynamic>.from(e)).toList();
       Logger.info(
-        'Fetched ${materials.length} materials for all courses',
+        'Fetched ${materials.length} materials for all courses (user: $userId)',
         tag: 'Database',
       );
       return materials;

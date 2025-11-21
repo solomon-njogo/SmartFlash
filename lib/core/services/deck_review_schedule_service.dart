@@ -83,8 +83,15 @@ class DeckReviewScheduleService {
           .limit(1)
           .maybeSingle();
 
-      // Upsert the schedule
-      await client.from('deck_review_schedules').upsert({
+      // Check if schedule already exists
+      final existingSchedule = await client
+          .from('deck_review_schedules')
+          .select('id')
+          .eq('deck_id', deckId)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      final scheduleData = {
         'deck_id': deckId,
         'user_id': userId,
         'next_review_date': earliestDueDate?.toIso8601String(),
@@ -94,7 +101,18 @@ class DeckReviewScheduleService {
         'cards_relearning_count': cardsRelearningCount,
         'last_attempt_id': latestAttempt?['id'],
         'last_attempt_at': latestAttempt?['completed_at'],
-      });
+      };
+
+      // Update existing or insert new schedule
+      if (existingSchedule != null) {
+        await client
+            .from('deck_review_schedules')
+            .update(scheduleData)
+            .eq('deck_id', deckId)
+            .eq('user_id', userId);
+      } else {
+        await client.from('deck_review_schedules').insert(scheduleData);
+      }
 
       Logger.info('Deck review schedule updated: $deckId');
     } catch (e, stackTrace) {

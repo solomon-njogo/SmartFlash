@@ -23,6 +23,7 @@ class FlashcardReviewScreen extends StatefulWidget {
 
 class _FlashcardReviewScreenState extends State<FlashcardReviewScreen> {
   bool _isFlipped = false;
+  FlashcardReviewProvider? _reviewProvider;
 
   @override
   void initState() {
@@ -30,6 +31,15 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFlashcards();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reviewProvider = Provider.of<FlashcardReviewProvider>(
+      context,
+      listen: false,
+    );
   }
 
   Future<void> _loadFlashcards() async {
@@ -767,15 +777,14 @@ class _FlashcardReviewScreenState extends State<FlashcardReviewScreen> {
   @override
   void dispose() {
     // Abandon attempt if user exits before viewing summary (i.e., before completing all cards)
-    final reviewProvider = Provider.of<FlashcardReviewProvider>(
-      context,
-      listen: false,
-    );
-    // Only abandon if attempt exists, is in progress, and session is not completed
-    if (reviewProvider.currentAttempt != null &&
-        reviewProvider.currentAttempt!.isInProgress &&
-        !reviewProvider.isSessionCompleted) {
-      reviewProvider.abandonAttempt();
+    // Use saved provider reference instead of accessing through context (which is unsafe in dispose)
+    if (_reviewProvider != null) {
+      // Only abandon if attempt exists, is in progress, and session is not completed
+      if (_reviewProvider!.currentAttempt != null &&
+          _reviewProvider!.currentAttempt!.isInProgress &&
+          !_reviewProvider!.isSessionCompleted) {
+        _reviewProvider!.abandonAttempt();
+      }
     }
     super.dispose();
   }

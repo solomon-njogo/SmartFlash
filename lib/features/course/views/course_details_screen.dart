@@ -543,13 +543,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                 Icons.library_books,
                 'No Decks',
                 'This course doesn\'t have any decks yet.',
-                'Create Deck',
-                () {
-                  AppNavigation.goAIGeneration(
-                    context,
-                    courseId: widget.courseId,
-                  );
-                },
               );
             }
 
@@ -683,10 +676,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                 Icons.quiz,
                 'No Quizzes',
                 'This course doesn\'t have any quizzes yet.',
-                'Create Quiz',
-                () {
-                  AppNavigation.goAIGeneration(context, courseId: widget.courseId);
-                },
               );
             }
 
@@ -833,13 +822,6 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
             Icons.attach_file,
             'No Materials',
             'This course doesn\'t have any materials yet.',
-            'Upload Material',
-            () {
-              AppNavigation.goUploadMaterials(
-                context,
-                courseId: widget.courseId,
-              );
-            },
           );
         }
 
@@ -874,10 +856,10 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
     BuildContext context,
     IconData icon,
     String title,
-    String subtitle,
-    String actionText,
-    VoidCallback onAction,
-  ) {
+    String subtitle, [
+    String? actionText,
+    VoidCallback? onAction,
+  ]) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -887,10 +869,12 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
         message: subtitle,
         icon: icon,
         iconColor: colorScheme.primary,
-        onAction: () {
-          HapticFeedback.mediumImpact();
-          onAction();
-        },
+        onAction: onAction != null
+            ? () {
+                HapticFeedback.mediumImpact();
+                onAction();
+              }
+            : null,
         actionText: actionText,
       ),
     );
