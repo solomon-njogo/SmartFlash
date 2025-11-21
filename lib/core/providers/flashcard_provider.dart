@@ -248,5 +248,24 @@ class FlashcardProvider extends ChangeNotifier {
   void clearError() {
     _clearError();
   }
+
+  /// Search flashcards by query
+  /// Searches across frontText, backText, and tags
+  List<FlashcardModel> searchFlashcards(String query) {
+    if (query.isEmpty) return _flashcards;
+
+    final lowerQuery = query.toLowerCase();
+    return _flashcards
+        .where(
+          (flashcard) =>
+              flashcard.frontText.toLowerCase().contains(lowerQuery) ||
+              flashcard.backText.toLowerCase().contains(lowerQuery) ||
+              (flashcard.tags?.any(
+                    (tag) => tag.toLowerCase().contains(lowerQuery),
+                  ) ??
+                  false),
+        )
+        .toList();
+  }
 }
 

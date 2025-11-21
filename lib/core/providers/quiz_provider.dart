@@ -558,4 +558,19 @@ class QuizProvider extends ChangeNotifier {
   void clearError() {
     _clearError();
   }
+
+  /// Search quizzes by query
+  /// Searches across name and description
+  List<QuizModel> searchQuizzes(String query) {
+    if (query.isEmpty) return _quizzes;
+
+    final lowerQuery = query.toLowerCase();
+    return _quizzes
+        .where(
+          (quiz) =>
+              quiz.name.toLowerCase().contains(lowerQuery) ||
+              (quiz.description?.toLowerCase().contains(lowerQuery) ?? false),
+        )
+        .toList();
+  }
 }
