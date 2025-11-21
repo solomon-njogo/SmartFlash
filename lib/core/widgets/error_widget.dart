@@ -29,51 +29,68 @@ class ErrorWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Container(
-      padding: padding ?? const EdgeInsets.all(AppConstants.defaultPadding),
+      padding: padding ?? const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: backgroundColor ?? theme.colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        color: backgroundColor ?? colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(16), // Modern corner radius
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (showIcon) ...[
-            Icon(
-              icon ?? Icons.error_outline,
-              size: 48,
-              color: textColor ?? theme.colorScheme.onErrorContainer,
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: (textColor ?? colorScheme.error)
+                    .withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon ?? Icons.error_outline,
+                size: 32,
+                color: textColor ?? colorScheme.error,
+              ),
             ),
-            const SizedBox(height: AppConstants.smallPadding),
+            const SizedBox(height: 16),
           ],
           if (title != null) ...[
             Text(
               title!,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: textColor ?? theme.colorScheme.onErrorContainer,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: textColor ?? colorScheme.onErrorContainer,
                 fontWeight: FontWeight.w600,
+                fontSize: 20,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: AppConstants.smallPadding),
+            const SizedBox(height: 12),
           ],
           Text(
             message,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: textColor ?? theme.colorScheme.onErrorContainer,
+              color: textColor ?? colorScheme.onErrorContainer,
+              fontSize: 16,
+              height: 1.5,
             ),
             textAlign: TextAlign.center,
           ),
           if (onRetry != null) ...[
-            const SizedBox(height: AppConstants.defaultPadding),
+            const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh, size: 20),
               label: Text(retryText ?? 'Retry'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.error,
-                foregroundColor: theme.colorScheme.onError,
+                backgroundColor: colorScheme.error,
+                foregroundColor: colorScheme.onError,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
               ),
             ),
           ],
@@ -165,7 +182,7 @@ class FileErrorWidget extends StatelessWidget {
   }
 }
 
-/// Empty state widget
+/// Empty state widget (Enhanced with modern design)
 class EmptyStateWidget extends StatelessWidget {
   final String message;
   final String? title;
@@ -187,43 +204,64 @@ class EmptyStateWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon ?? Icons.inbox_outlined,
-              size: 64,
-              color: iconColor ?? theme.colorScheme.onSurface.withOpacity(0.5),
+            // Large icon with background circle
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: (iconColor ?? colorScheme.primary)
+                    .withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon ?? Icons.inbox_outlined,
+                size: 50,
+                color: iconColor ?? colorScheme.primary.withOpacity(0.7),
+              ),
             ),
-            const SizedBox(height: AppConstants.defaultPadding),
+            const SizedBox(height: 24),
             if (title != null) ...[
               Text(
                 title!,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
+                  fontSize: 24,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: AppConstants.smallPadding),
+              const SizedBox(height: 12),
             ],
             Text(
               message,
               style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
+                color: colorScheme.onSurface.withOpacity(0.7),
+                fontSize: 16,
+                height: 1.5,
               ),
               textAlign: TextAlign.center,
             ),
             if (onAction != null) ...[
-              const SizedBox(height: AppConstants.defaultPadding),
+              const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: onAction,
-                icon: const Icon(Icons.add),
+                icon: const Icon(Icons.add, size: 20),
                 label: Text(actionText ?? 'Get Started'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
+                ),
               ),
             ],
           ],

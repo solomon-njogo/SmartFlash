@@ -10,8 +10,8 @@ import '../features/course/views/course_details_screen.dart';
 import '../features/course/views/course_review_history_screen.dart';
 import 'screens/settings_screen.dart';
 import '../features/course/views/create_course_screen.dart' as feature_course;
-import '../features/course/views/edit_course_screen.dart' as feature_course_edit;
-import 'screens/other_screens.dart';
+import '../features/course/views/edit_course_screen.dart'
+    as feature_course_edit;
 import '../features/materials/views/upload_materials_screen.dart';
 import '../features/materials/views/material_preview_screen.dart';
 import '../features/ai/views/ai_generation_screen.dart';
@@ -26,6 +26,11 @@ import '../features/quiz/views/quiz_taking_screen.dart';
 import '../features/quiz/views/quiz_results_screen.dart';
 import '../data/models/quiz_attempt_model.dart';
 import '../features/search/views/search_screen.dart' as search_feature;
+import '../features/deck/views/edit_deck_screen.dart';
+import '../features/deck/views/study_session_screen.dart';
+import '../features/deck/views/study_results_screen.dart';
+import 'screens/statistics_screen.dart';
+import 'screens/not_found_screen.dart';
 
 /// App router configuration using GoRouter
 class AppRouter {
@@ -95,7 +100,8 @@ class AppRouter {
         builder: (context, state) {
           final courseId = state.pathParameters['courseId']!;
           final tabIndex = state.uri.queryParameters['tab'];
-          final initialTabIndex = tabIndex != null ? int.tryParse(tabIndex) : null;
+          final initialTabIndex =
+              tabIndex != null ? int.tryParse(tabIndex) : null;
           return CourseDetailsScreen(
             courseId: courseId,
             initialTabIndex: initialTabIndex,
@@ -166,10 +172,7 @@ class AppRouter {
         builder: (context, state) {
           final deckId = state.uri.queryParameters['deckId']!;
           final flashcardId = state.uri.queryParameters['flashcardId'];
-          return FlashcardEditScreen(
-            deckId: deckId,
-            flashcardId: flashcardId,
-          );
+          return FlashcardEditScreen(deckId: deckId, flashcardId: flashcardId);
         },
       ),
 
@@ -229,8 +232,11 @@ class AppRouter {
         name: 'uploadMaterials',
         builder: (context, state) {
           final queryCourseId = state.uri.queryParameters['courseId'];
-          final extraCourseId = state.extra is String ? state.extra as String? : null;
-          return UploadMaterialsScreen(preselectedCourseId: queryCourseId ?? extraCourseId);
+          final extraCourseId =
+              state.extra is String ? state.extra as String? : null;
+          return UploadMaterialsScreen(
+            preselectedCourseId: queryCourseId ?? extraCourseId,
+          );
         },
       ),
       GoRoute(
@@ -426,10 +432,7 @@ class AppNavigation {
   }
 
   /// Navigate to quiz results screen
-  static void goQuizResults(
-    BuildContext context,
-    QuizAttemptModel attempt,
-  ) {
+  static void goQuizResults(BuildContext context, QuizAttemptModel attempt) {
     push(context, '/quiz-results', extra: attempt);
   }
 
@@ -494,7 +497,10 @@ class AppNavigation {
     String? flashcardId,
   }) {
     if (flashcardId != null) {
-      push(context, '/flashcard-review?deckId=$deckId&flashcardId=$flashcardId');
+      push(
+        context,
+        '/flashcard-review?deckId=$deckId&flashcardId=$flashcardId',
+      );
     } else {
       push(context, '/flashcard-review?deckId=$deckId');
     }

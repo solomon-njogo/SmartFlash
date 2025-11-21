@@ -8,10 +8,11 @@ class AppColors {
 
   // ===== LIGHT THEME COLORS =====
 
-  // Primary colors - Light theme
-  static const Color primary = Color(0xFF2196F3);
-  static const Color primaryDark = Color(0xFF1976D2);
+  // Primary colors - Light theme (Enhanced with vibrant, accessible colors)
+  static const Color primary = Color(0xFF1976D2); // More vibrant blue
+  static const Color primaryDark = Color(0xFF1565C0);
   static const Color primaryLight = Color(0xFF64B5F6);
+  static const Color primaryContainer = Color(0xFFE3F2FD);
 
   // Secondary colors - Light theme
   static const Color secondary = Color(0xFF03DAC6);
@@ -23,17 +24,19 @@ class AppColors {
   static const Color accentDark = Color(0xFFF57C00);
   static const Color accentLight = Color(0xFFFFB74D);
 
-  // Background colors - Light theme
-  static const Color background = Color(0xFFF5F5F5);
+  // Background colors - Light theme (Enhanced for better contrast)
+  static const Color background = Color(0xFFFAFAFA);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFF8F9FA);
+  static const Color surfaceVariant = Color(0xFFF5F5F5);
+  static const Color surfaceContainer = Color(0xFFEEEEEE);
 
-  // Text colors - Light theme
-  static const Color textPrimary = Color(0xFF212121);
-  static const Color textSecondary = Color(0xFF757575);
-  static const Color textHint = Color(0xFFBDBDBD);
+  // Text colors - Light theme (Enhanced for better readability - AA/AAA compliant)
+  static const Color textPrimary = Color(0xFF1A1A1A); // Higher contrast
+  static const Color textSecondary = Color(0xFF616161); // Better contrast
+  static const Color textHint = Color(0xFF9E9E9E);
   static const Color textOnPrimary = Color(0xFFFFFFFF);
   static const Color textOnSecondary = Color(0xFF000000);
+  static const Color textDisabled = Color(0xFFBDBDBD);
 
   // Status colors
   static const Color success = Color(0xFF4CAF50);
@@ -46,10 +49,15 @@ class AppColors {
   static const Color borderLight = Color(0xFFF0F0F0);
   static const Color borderDark = Color(0xFFBDBDBD);
 
-  // Shadow colors
+  // Shadow colors (Enhanced for better depth perception)
   static const Color shadow = Color(0x1A000000);
   static const Color shadowLight = Color(0x0A000000);
   static const Color shadowDark = Color(0x33000000);
+  static const Color shadowMedium = Color(0x1F000000);
+
+  // Glassmorphism/Backdrop blur colors
+  static const Color glassBackground = Color(0x80FFFFFF);
+  static const Color glassBorder = Color(0x1FFFFFFF);
 
   // ===== DARK THEME COLORS =====
   // Following Material Design 3 dark theme guidelines and 60-30-10 distribution rule
@@ -86,12 +94,16 @@ class AppColors {
   ); // Elevated surface (20% of screen)
   static const Color surfaceVariantDark = Color(0xFF2C2C2C); // Variant surface
 
-  // Elevation-based surface colors for proper depth hierarchy
+  // Elevation-based surface colors for proper depth hierarchy (Enhanced)
   static const Color surfaceDarkElevation1 = Color(0xFF1A1A1A);
   static const Color surfaceDarkElevation2 = Color(0xFF1E1E1E);
   static const Color surfaceDarkElevation3 = Color(0xFF242424);
   static const Color surfaceDarkElevation4 = Color(0xFF2A2A2A);
   static const Color surfaceDarkElevation5 = Color(0xFF303030);
+
+  // Glassmorphism for dark theme
+  static const Color glassBackgroundDark = Color(0x801E1E1E);
+  static const Color glassBorderDark = Color(0x1FFFFFFF);
 
   // Text colors - Dark theme with proper opacity hierarchy
   static const Color textPrimaryDark = Color(0xFFE1E1E1); // 87% white opacity
@@ -114,11 +126,23 @@ class AppColors {
 
   // ===== GRADIENT COLORS =====
 
-  // Light theme gradients
+  // Light theme gradients (Enhanced with soft, modern gradients)
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [primary, primaryDark],
+  );
+
+  static const LinearGradient primaryGradientSoft = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primaryLight, primary],
+  );
+
+  static const LinearGradient surfaceGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [surface, surfaceVariant],
   );
 
   static const LinearGradient secondaryGradient = LinearGradient(
@@ -133,11 +157,23 @@ class AppColors {
     colors: [accent, accentDark],
   );
 
-  // Dark theme gradients
+  // Dark theme gradients (Enhanced)
   static const LinearGradient primaryGradientDark = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [primaryDarkTheme, primaryDarkContainer],
+  );
+
+  static const LinearGradient primaryGradientDarkSoft = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primaryDarkLight, primaryDarkTheme],
+  );
+
+  static const LinearGradient surfaceGradientDark = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [surfaceDark, surfaceDarkElevation2],
   );
 
   static const LinearGradient secondaryGradientDark = LinearGradient(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../data/models/course_model.dart';
 import '../../../data/models/quiz_model.dart';
@@ -11,6 +12,8 @@ import '../../../app/app_text_styles.dart';
 import '../../../data/models/course_material_model.dart';
 import '../../../app/widgets/course_material_card.dart';
 import '../../../app/router.dart';
+import '../../../core/widgets/loading_indicator.dart';
+import '../../../core/widgets/error_widget.dart';
 
 /// Course details screen with tabs for Decks, Quizzes, and Materials
 class CourseDetailsScreen extends StatefulWidget {
@@ -221,11 +224,18 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
             child: Row(
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 64, // Larger for better visibility
+                  height: 64,
                   decoration: BoxDecoration(
-                    color: _course!.color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
+                    color: _course!.color.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16), // Modern corner radius
+                    boxShadow: [
+                      BoxShadow(
+                        color: _course!.color.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Icon(
                     _getIconData(_course!.iconName ?? 'folder'),
@@ -259,16 +269,26 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                   ),
                 ),
                 IconButton(
-                  onPressed: () => AppNavigation.goEditCourse(context, _course!.id),
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    AppNavigation.goEditCourse(context, _course!.id);
+                  },
                   icon: Icon(Icons.edit, color: colorScheme.onSurface),
                   tooltip: 'Edit Course',
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(48, 48), // Better touch target
+                  ),
                 ),
                 IconButton(
                   onPressed: () {
+                    HapticFeedback.selectionClick();
                     setState(() {
                       _isHeaderExpanded = !_isHeaderExpanded;
                     });
                   },
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(48, 48), // Better touch target
+                  ),
                   icon: AnimatedRotation(
                     turns: _isHeaderExpanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 200),
@@ -381,15 +401,16 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                             width: double.infinity,
                             child: OutlinedButton.icon(
                               onPressed: () {
+                                HapticFeedback.selectionClick();
                                 AppNavigation.goCourseReviewHistory(
                                   context,
                                   _course!.id,
                                 );
                               },
-                              icon: const Icon(Icons.history),
+                              icon: const Icon(Icons.history, size: 20),
                               label: const Text('View Review History'),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
                               ),
                             ),
                           ),
@@ -415,12 +436,12 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isSmallScreen ? 8 : 12,
-        vertical: isSmallScreen ? 6 : 8,
+        horizontal: isSmallScreen ? 10 : 14,
+        vertical: isSmallScreen ? 8 : 10,
       ),
       decoration: BoxDecoration(
         color: colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20), // Modern corner radius
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -506,7 +527,10 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
 
             if (snapshot.connectionState == ConnectionState.waiting &&
                 courseDecks.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
+              return ListSkeletonLoading(
+                itemCount: 3,
+                itemBuilder: (context, index) => const CardSkeletonLoading(),
+              );
             }
 
             // Also check cache again in case it was updated
@@ -531,6 +555,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
 
             return RefreshIndicator(
               onRefresh: () async {
+                HapticFeedback.lightImpact();
                 await deckProvider.refreshDecks();
                 // Force rebuild by using setState or the key will handle it
               },
@@ -543,7 +568,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                     margin: const EdgeInsets.only(bottom: 12),
                     elevation: 2,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16), // Modern corner radius
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.all(16),
@@ -619,6 +644,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                             ],
                       ),
                       onTap: () {
+                        HapticFeedback.selectionClick();
                         AppNavigation.goFlashcardReview(
                           context,
                           deckId: deck.id,
@@ -643,7 +669,10 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
           future: quizProvider.getQuizzesByCourseIdAsync(widget.courseId),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return ListSkeletonLoading(
+                itemCount: 3,
+                itemBuilder: (context, index) => const CardSkeletonLoading(),
+              );
             }
 
             final courseQuizzes = snapshot.data ?? [];
@@ -670,7 +699,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                   margin: const EdgeInsets.only(bottom: 12),
                   elevation: 2,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16), // Modern corner radius
                   ),
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(16),
@@ -763,6 +792,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                           ],
                     ),
                     onTap: () {
+                      HapticFeedback.selectionClick();
                       AppNavigation.goQuizTaking(context, quiz.id);
                     },
                   ),
@@ -787,7 +817,10 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
         }
 
         if (materialProvider.isLoading && materialProvider.materials.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return ListSkeletonLoading(
+            itemCount: 3,
+            itemBuilder: (context, index) => const CardSkeletonLoading(),
+          );
         }
 
         final courseMaterials = materialProvider.getMaterialsByCourseId(
@@ -811,8 +844,10 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
         }
 
         return RefreshIndicator(
-          onRefresh:
-              () => materialProvider.loadMaterialsForCourse(widget.courseId),
+          onRefresh: () {
+            HapticFeedback.lightImpact();
+            return materialProvider.loadMaterialsForCourse(widget.courseId);
+          },
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: courseMaterials.length,
@@ -874,35 +909,16 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
     final colorScheme = theme.colorScheme;
 
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 64, color: colorScheme.onSurfaceVariant),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: AppTextStyles.headlineSmall.copyWith(
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: onAction,
-              icon: const Icon(Icons.add),
-              label: Text(actionText),
-            ),
-          ],
-        ),
+      child: EmptyStateWidget(
+        title: title,
+        message: subtitle,
+        icon: icon,
+        iconColor: colorScheme.primary,
+        onAction: () {
+          HapticFeedback.mediumImpact();
+          onAction();
+        },
+        actionText: actionText,
       ),
     );
   }

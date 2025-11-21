@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../../../app/router.dart';
@@ -64,22 +65,30 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildAppIcon() {
-    return const AppLogo(size: 120, borderRadius: 20);
+    return const AppLogo(
+      size: 120,
+      borderRadius: 24, // Modern corner radius
+    );
   }
 
   Widget _buildWelcomeSection() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return Column(
       children: [
         const AppName(
           variant: AppNameVariant.branded,
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Text(
           'Your smart learning companion',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: 16,
+            height: 1.5,
           ),
         ),
       ],
@@ -150,28 +159,55 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Widget _buildFeatureCard({required IconData icon, required String title}) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return AspectRatio(
       aspectRatio: 1.0, // Makes the card square
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceVariant,
-          borderRadius: BorderRadius.circular(12),
+          // Glassmorphic effect
+          color: isDark
+              ? colorScheme.surfaceVariant.withOpacity(0.6)
+              : colorScheme.surface.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(16), // Modern corner radius
           border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
+            color: colorScheme.outlineVariant.withOpacity(0.3),
             width: 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 8),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                size: 28,
+                color: colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: AppTextStyles.labelMedium.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
+              style: AppTextStyles.titleSmall.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -188,34 +224,49 @@ class _AuthScreenState extends State<AuthScreen> {
         return SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: authProvider.isLoading ? null : _handleGoogleAuth,
+            onPressed: authProvider.isLoading ? null : () {
+              HapticFeedback.mediumImpact();
+              _handleGoogleAuth();
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: colorScheme.primary,
               foregroundColor: colorScheme.onPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 18), // Increased for better touch target
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12), // Modern corner radius
               ),
               elevation: 2,
+              minimumSize: const Size(double.infinity, 56), // Minimum touch target
             ),
             child:
                 authProvider.isLoading
                     ? SizedBox(
-                      height: 20,
-                      width: 20,
+                      height: 24,
+                      width: 24,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
+                        strokeWidth: 3,
                         valueColor: AlwaysStoppedAnimation<Color>(
                           colorScheme.onPrimary,
                         ),
                       ),
                     )
-                    : Text(
-                      'Get Started',
-                      style: AppTextStyles.button.copyWith(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.login,
+                          size: 20,
+                          color: colorScheme.onPrimary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Get Started with Google',
+                          style: AppTextStyles.button.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
           ),
         );

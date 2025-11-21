@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/providers/course_provider.dart';
@@ -10,6 +11,8 @@ import '../../../app/app_text_styles.dart';
 import '../../../app/widgets/app_logo.dart';
 import '../../../app/widgets/course_card.dart';
 import '../../../app/widgets/upcoming_reviews_section.dart';
+import '../../../core/widgets/loading_indicator.dart';
+import '../../../core/widgets/error_widget.dart' as custom_error;
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -71,11 +74,17 @@ class HomeScreen extends StatelessWidget {
           // Search and user avatar
           Row(
             children: [
-              // Search button
+              // Search button (Enhanced with haptic feedback)
               IconButton(
                 icon: const Icon(Icons.search),
-                onPressed: () => AppNavigation.goSearch(context),
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  AppNavigation.goSearch(context);
+                },
                 tooltip: 'Search',
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(48, 48), // Better touch target
+                ),
               ),
               const SizedBox(width: 8),
               // User avatar
@@ -123,8 +132,12 @@ class HomeScreen extends StatelessWidget {
     BuildContext context,
     CourseProvider courseProvider,
   ) {
-    if (courseProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+    if (courseProvider.isLoading && courseProvider.courses.isEmpty) {
+      // Show skeleton loading when loading for the first time
+      return ListSkeletonLoading(
+        itemCount: 3,
+        itemBuilder: (context, index) => const CourseCardSkeleton(),
+      );
     }
 
     if (courseProvider.error != null) {
@@ -138,35 +151,16 @@ class HomeScreen extends StatelessWidget {
 
   /// Builds the error state
   Widget _buildErrorState(BuildContext context, CourseProvider courseProvider) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64, color: colorScheme.error),
-          const SizedBox(height: 16),
-          Text(
-            'Error loading courses',
-            style: AppTextStyles.headlineSmall.copyWith(
-              color: colorScheme.onBackground,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            courseProvider.error!,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: colorScheme.onBackground.withOpacity(0.7),
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => courseProvider.refreshCourses(),
-            child: const Text('Retry'),
-          ),
-        ],
+      child: custom_error.ErrorWidget(
+        title: 'Error loading courses',
+        message: courseProvider.error ?? 'Something went wrong',
+        icon: Icons.error_outline,
+        onRetry: () {
+          HapticFeedback.mediumImpact();
+          courseProvider.refreshCourses();
+        },
+        retryText: 'Retry',
       ),
     );
   }
@@ -176,33 +170,16 @@ class HomeScreen extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Large app logo
-          AppLogo(
-            size: 120,
-            borderRadius: 20,
-            backgroundColor: colorScheme.primary,
-          ),
-          const SizedBox(height: 32),
-          // Main heading
-          Text(
-            "Let's get started",
-            style: AppTextStyles.headlineMedium.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onBackground,
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Sub text
-          Text(
-            'Create your first course below.',
-            style: AppTextStyles.bodyLarge.copyWith(
-              color: colorScheme.onBackground.withOpacity(0.87),
-            ),
-          ),
-        ],
+      child: custom_error.EmptyStateWidget(
+        title: "Let's get started",
+        message: 'Create your first course to organize your study materials and start learning.',
+        icon: Icons.folder_outlined,
+        iconColor: colorScheme.primary,
+        onAction: () {
+          HapticFeedback.mediumImpact();
+          _showCreateBottomSheet(context);
+        },
+        actionText: 'Create Course',
       ),
     );
   }
@@ -218,6 +195,7 @@ class HomeScreen extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
+        HapticFeedback.lightImpact();
         await Future.wait([
           courseProvider.refreshCourses(),
           materialProvider.refreshMaterials(),
@@ -323,7 +301,10 @@ class HomeScreen extends StatelessWidget {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(28),
-          onTap: () => _showCreateBottomSheet(context),
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            _showCreateBottomSheet(context);
+          },
           child: const SizedBox(
             height: 56,
             child: Center(child: _CreateButtonContent()),
@@ -372,12 +353,12 @@ class _CreateBottomSheet extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)), // Modern corner radius
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+            blurRadius: 24,
+            offset: const Offset(0, -8),
           ),
         ],
       ),
@@ -486,24 +467,27 @@ class _CreateBottomSheet extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
+        borderRadius: BorderRadius.circular(16), // Modern corner radius
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16), // Modern corner radius
           ),
           child: Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 56, // Larger for better visibility
+                height: 56,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: colorScheme.primary.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(14), // Modern corner radius
                 ),
-                child: Icon(icon, color: colorScheme.primary, size: 24),
+                child: Icon(icon, color: colorScheme.primary, size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
