@@ -44,6 +44,15 @@ class ReviewLogModel extends HiveObject {
   @HiveField(11)
   final Map<String, dynamic>? metadata;
 
+  @HiveField(12)
+  final double? stability;
+
+  @HiveField(13)
+  final double? difficulty;
+
+  @HiveField(14)
+  final double? retrievability;
+
   ReviewLogModel({
     required this.id,
     required this.cardId,
@@ -57,6 +66,9 @@ class ReviewLogModel extends HiveObject {
     this.responseTime = 0.0,
     this.userId,
     this.metadata,
+    this.stability,
+    this.difficulty,
+    this.retrievability,
   });
 
   /// Create ReviewLogModel from JSON
@@ -80,6 +92,9 @@ class ReviewLogModel extends HiveObject {
     double? responseTime,
     String? userId,
     Map<String, dynamic>? metadata,
+    double? stability,
+    double? difficulty,
+    double? retrievability,
   }) {
     return ReviewLogModel(
       id: id ?? this.id,
@@ -94,6 +109,9 @@ class ReviewLogModel extends HiveObject {
       responseTime: responseTime ?? this.responseTime,
       userId: userId ?? this.userId,
       metadata: metadata ?? this.metadata,
+      stability: stability ?? this.stability,
+      difficulty: difficulty ?? this.difficulty,
+      retrievability: retrievability ?? this.retrievability,
     );
   }
 

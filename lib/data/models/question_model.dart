@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'fsrs_card_state_model.dart';
 
 part 'question_model.g.dart';
 
@@ -58,6 +59,10 @@ class QuestionModel extends HiveObject {
   @HiveField(11)
   final bool isAIGenerated;
 
+  // FSRS algorithm state (optional)
+  @HiveField(12)
+  final FSRSCardState? fsrsState;
+
   QuestionModel({
     required this.id,
     required this.quizId,
@@ -71,6 +76,7 @@ class QuestionModel extends HiveObject {
     required this.updatedAt,
     this.createdBy,
     this.isAIGenerated = false,
+    this.fsrsState,
   });
 
   /// Create QuestionModel from JSON (camelCase)
@@ -102,6 +108,9 @@ class QuestionModel extends HiveObject {
       updatedAt: DateTime.parse(json['updated_at'] as String),
       createdBy: json['created_by'] as String?,
       isAIGenerated: json['is_ai_generated'] as bool? ?? false,
+      fsrsState: json['fsrs_state'] != null
+          ? FSRSCardState.fromJson(json['fsrs_state'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -121,6 +130,7 @@ class QuestionModel extends HiveObject {
       'updated_at': updatedAt.toIso8601String(),
       'created_by': createdBy,
       'is_ai_generated': isAIGenerated,
+      if (fsrsState != null) 'fsrs_state': fsrsState!.toJson(),
     };
   }
 
@@ -172,6 +182,7 @@ class QuestionModel extends HiveObject {
     DateTime? updatedAt,
     String? createdBy,
     bool? isAIGenerated,
+    FSRSCardState? fsrsState,
   }) {
     return QuestionModel(
       id: id ?? this.id,
@@ -186,6 +197,7 @@ class QuestionModel extends HiveObject {
       updatedAt: updatedAt ?? this.updatedAt,
       createdBy: createdBy ?? this.createdBy,
       isAIGenerated: isAIGenerated ?? this.isAIGenerated,
+      fsrsState: fsrsState ?? this.fsrsState,
     );
   }
 

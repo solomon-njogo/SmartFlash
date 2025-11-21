@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/deck_attempt_model.dart';
 import '../../../app/app_text_styles.dart';
+import '../../../app/widgets/next_review_card.dart';
 
 /// Results screen showing deck attempt performance
 class DeckAttemptResultsScreen extends StatelessWidget {
@@ -180,6 +181,14 @@ class DeckAttemptResultsScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 32),
+
+              // Next review card
+              NextReviewCard(
+                itemId: attempt.deckId,
+                userId: attempt.userId,
+                isDeck: true,
               ),
               const SizedBox(height: 32),
 

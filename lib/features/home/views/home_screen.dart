@@ -9,6 +9,7 @@ import '../../../app/theme/app_name.dart';
 import '../../../app/app_text_styles.dart';
 import '../../../app/widgets/app_logo.dart';
 import '../../../app/widgets/course_card.dart';
+import '../../../app/widgets/upcoming_reviews_section.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -200,6 +201,9 @@ class HomeScreen extends StatelessWidget {
   ) {
     final materialProvider = Provider.of<CourseMaterialProvider>(context, listen: false);
     final deckProvider = Provider.of<DeckProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userId = authProvider.user?.id;
+
     return RefreshIndicator(
       onRefresh: () async {
         await Future.wait([
@@ -208,19 +212,35 @@ class HomeScreen extends StatelessWidget {
           deckProvider.refreshDecks(),
         ]);
       },
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        itemCount: courseProvider.courses.length,
-        itemBuilder: (context, index) {
-          final course = courseProvider.courses[index];
-          return CourseCard(
-            course: course,
-            onTap: () => AppNavigation.goCourseDetails(context, course.id),
-            onEdit: () => AppNavigation.goEditCourse(context, course.id),
-            onDelete:
-                () => _showDeleteCourseDialog(context, courseProvider, course),
-          );
-        },
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          // Upcoming reviews section
+          if (userId != null)
+            UpcomingReviewsSection(
+              key: ValueKey('upcoming_reviews_$userId'),
+              userId: userId,
+            ),
+          // Courses list
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            itemCount: courseProvider.courses.length,
+            itemBuilder: (context, index) {
+              final course = courseProvider.courses[index];
+              return CourseCard(
+                course: course,
+                onTap: () => AppNavigation.goCourseDetails(context, course.id),
+                onEdit: () => AppNavigation.goEditCourse(context, course.id),
+                onDelete:
+                    () => _showDeleteCourseDialog(context, courseProvider, course),
+              );
+            },
+          ),
+          // Bottom padding for floating button
+          const SizedBox(height: 100),
+        ],
       ),
     );
   }

@@ -156,6 +156,9 @@ class FlashcardModel extends HiveObject {
       consecutiveCorrectAnswers: 0,
       totalReviews: 0,
       averageResponseTime: 0.0,
+      fsrsState: json['fsrs_state'] != null
+          ? FSRSCardState.fromJson(json['fsrs_state'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -171,6 +174,8 @@ class FlashcardModel extends HiveObject {
       'updated_at': updatedAt.toIso8601String(),
       'created_by': createdBy,
       'is_ai_generated': isAIGenerated,
+      if (fsrsState != null) 'fsrs_state': fsrsState!.toJson(),
+      if (fsrsState != null) 'fsrs_card_id': fsrsState!.cardId,
     };
   }
 

@@ -4,10 +4,12 @@ import '../../data/remote/supabase_client.dart';
 import '../../core/utils/logger.dart';
 import 'package:uuid/uuid.dart';
 import 'package:fsrs/fsrs.dart' hide State;
+import 'deck_review_schedule_service.dart';
 
 /// Service for managing deck study attempts
 class DeckAttemptService {
   final SupabaseService _supabaseService = SupabaseService.instance;
+  final DeckReviewScheduleService _scheduleService = DeckReviewScheduleService();
   final Uuid _uuid = const Uuid();
 
   /// Create a new deck attempt
@@ -139,6 +141,18 @@ class DeckAttemptService {
 
       final saved = await _supabaseService.updateDeckAttempt(completed);
       Logger.info('Deck attempt completed: ${saved.id}');
+      
+      // Update deck review schedule after completion
+      try {
+        await _scheduleService.updateDeckReviewSchedule(
+          saved.deckId,
+          saved.userId,
+        );
+      } catch (e) {
+        Logger.warning('Failed to update deck review schedule: $e');
+        // Don't fail the attempt completion if schedule update fails
+      }
+      
       return saved;
     } catch (e) {
       Logger.error('Failed to complete deck attempt: $e');

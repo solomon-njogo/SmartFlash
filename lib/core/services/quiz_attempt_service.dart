@@ -3,10 +3,12 @@ import '../../data/models/quiz_attempt_answer_model.dart';
 import '../../data/remote/supabase_client.dart';
 import '../../core/utils/logger.dart';
 import 'package:uuid/uuid.dart';
+import 'quiz_review_schedule_service.dart';
 
-/// Service for managing quiz attempts
+/// Service for managing quiz study attempts
 class QuizAttemptService {
   final SupabaseService _supabaseService = SupabaseService.instance;
+  final QuizReviewScheduleService _scheduleService = QuizReviewScheduleService();
   final Uuid _uuid = const Uuid();
 
   /// Create a new quiz attempt
@@ -19,10 +21,7 @@ class QuizAttemptService {
       Logger.info('Creating quiz attempt for quiz: $quizId');
 
       // Get next attempt number
-      final attemptNumber = await _supabaseService.getNextQuizAttemptNumber(
-        quizId,
-        userId,
-      );
+      final attemptNumber = await _getNextAttemptNumber(quizId, userId);
 
       final now = DateTime.now();
       final attempt = QuizAttemptModel(
@@ -49,7 +48,7 @@ class QuizAttemptService {
     }
   }
 
-  /// Save an answer for a question
+  /// Save an answer for an attempt
   Future<QuizAttemptAnswerModel> saveAnswer({
     required String attemptId,
     required String questionId,
@@ -69,8 +68,8 @@ class QuizAttemptService {
         questionId: questionId,
         userAnswers: userAnswers,
         isCorrect: isCorrect,
-        answeredAt: DateTime.now(),
         timeSpentSeconds: timeSpentSeconds,
+        answeredAt: DateTime.now(),
         order: order,
       );
 
@@ -93,13 +92,11 @@ class QuizAttemptService {
       final updatedCorrectAnswers =
           isCorrect ? attempt.correctAnswers + 1 : attempt.correctAnswers;
       final updatedTotalTime = attempt.totalTimeSeconds + timeSpentSeconds;
-      final updatedScorePercentage = attempt.totalQuestions > 0
-          ? (updatedCorrectAnswers / attempt.totalQuestions) * 100
-          : 0.0;
+      final updatedScore = (updatedCorrectAnswers / attempt.totalQuestions) * 100;
 
       final updated = attempt.copyWith(
         correctAnswers: updatedCorrectAnswers,
-        scorePercentage: updatedScorePercentage,
+        scorePercentage: updatedScore,
         totalTimeSeconds: updatedTotalTime,
         updatedAt: DateTime.now(),
       );
@@ -126,6 +123,18 @@ class QuizAttemptService {
 
       final saved = await _supabaseService.updateQuizAttempt(completed);
       Logger.info('Quiz attempt completed: ${saved.id}');
+      
+      // Update quiz review schedule after completion
+      try {
+        await _scheduleService.updateQuizReviewSchedule(
+          saved.quizId,
+          saved.userId,
+        );
+      } catch (e) {
+        Logger.warning('Failed to update quiz review schedule: $e');
+        // Don't fail the attempt completion if schedule update fails
+      }
+      
       return saved;
     } catch (e) {
       Logger.error('Failed to complete quiz attempt: $e');
@@ -170,7 +179,7 @@ class QuizAttemptService {
       Logger.info('Getting attempts for user: $userId');
       return await _supabaseService.getUserQuizAttempts(userId);
     } catch (e) {
-      Logger.error('Failed to get user quiz attempts: $e');
+      Logger.error('Failed to get user attempts: $e');
       rethrow;
     }
   }
@@ -183,9 +192,21 @@ class QuizAttemptService {
       Logger.info('Getting answers for attempt: $attemptId');
       return await _supabaseService.getAttemptAnswers(attemptId);
     } catch (e) {
-      Logger.error('Failed to get attempt answers: $e');
+      Logger.error('Failed to get answers: $e');
       rethrow;
     }
   }
-}
 
+  /// Get next attempt number for a quiz
+  Future<int> _getNextAttemptNumber(String quizId, String userId) async {
+    try {
+      final attempts = await _supabaseService.getUserQuizAttempts(userId);
+      final quizAttempts = attempts.where((a) => a.quizId == quizId).toList();
+      if (quizAttempts.isEmpty) return 1;
+      return quizAttempts.map((a) => a.attemptNumber).reduce((a, b) => a > b ? a : b) + 1;
+    } catch (e) {
+      Logger.warning('Failed to get next attempt number, using 1: $e');
+      return 1;
+    }
+  }
+}
