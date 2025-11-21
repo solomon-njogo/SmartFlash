@@ -68,38 +68,50 @@ class HomeScreen extends StatelessWidget {
               const AppName(variant: AppNameVariant.header),
             ],
           ),
-          // User avatar
-          Consumer<AuthProvider>(
-            builder: (context, authProvider, child) {
-              final user = authProvider.user;
-              final photoUrl = user?.userMetadata?['avatar_url'] as String?;
-              final userInitial =
-                  user?.email?.isNotEmpty == true
-                      ? user!.email![0].toUpperCase()
-                      : 'U';
+          // Search and user avatar
+          Row(
+            children: [
+              // Search button
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () => AppNavigation.goSearch(context),
+                tooltip: 'Search',
+              ),
+              const SizedBox(width: 8),
+              // User avatar
+              Consumer<AuthProvider>(
+                builder: (context, authProvider, child) {
+                  final user = authProvider.user;
+                  final photoUrl = user?.userMetadata?['avatar_url'] as String?;
+                  final userInitial =
+                      user?.email?.isNotEmpty == true
+                          ? user!.email![0].toUpperCase()
+                          : 'U';
 
-              return GestureDetector(
-                onTap: () => AppNavigation.goProfile(context),
-                child: CircleAvatar(
-                  radius: 20,
-                  backgroundColor: colorScheme.primary,
-                  backgroundImage:
-                      photoUrl != null && photoUrl.isNotEmpty
-                          ? NetworkImage(photoUrl)
-                          : null,
-                  child:
-                      (photoUrl == null || photoUrl.isEmpty)
-                          ? Text(
-                            userInitial,
-                            style: AppTextStyles.titleMedium.copyWith(
-                              color: colorScheme.onPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          )
-                          : null,
-                ),
-              );
-            },
+                  return GestureDetector(
+                    onTap: () => AppNavigation.goProfile(context),
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundColor: colorScheme.primary,
+                      backgroundImage:
+                          photoUrl != null && photoUrl.isNotEmpty
+                              ? NetworkImage(photoUrl)
+                              : null,
+                      child:
+                          (photoUrl == null || photoUrl.isEmpty)
+                              ? Text(
+                                userInitial,
+                                style: AppTextStyles.titleMedium.copyWith(
+                                  color: colorScheme.onPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )
+                              : null,
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),

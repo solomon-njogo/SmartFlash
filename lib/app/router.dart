@@ -25,6 +25,7 @@ import '../data/models/deck_attempt_model.dart';
 import '../features/quiz/views/quiz_taking_screen.dart';
 import '../features/quiz/views/quiz_results_screen.dart';
 import '../data/models/quiz_attempt_model.dart';
+import '../features/search/views/search_screen.dart' as search_feature;
 
 /// App router configuration using GoRouter
 class AppRouter {
@@ -219,12 +220,6 @@ class AppRouter {
       ),
 
       GoRoute(
-        path: '/search',
-        name: 'search',
-        builder: (context, state) => const SearchScreen(),
-      ),
-
-      GoRoute(
         path: '/statistics',
         name: 'statistics',
         builder: (context, state) => const StatisticsScreen(),
@@ -280,6 +275,13 @@ class AppRouter {
           }
           return QuizResultsScreen(attempt: attempt);
         },
+      ),
+
+      // Search route
+      GoRoute(
+        path: '/search',
+        name: 'search',
+        builder: (context, state) => const search_feature.SearchScreen(),
       ),
     ],
     errorBuilder: (context, state) => const NotFoundScreen(),
@@ -408,6 +410,11 @@ class AppNavigation {
     push(context, '/deck-details/$deckId');
   }
 
+  /// Navigate to search
+  static void goSearch(BuildContext context) {
+    push(context, '/search');
+  }
+
   /// Navigate to study session
   static void goStudySession(BuildContext context, String deckId) {
     push(context, '/study-session/$deckId');
@@ -432,11 +439,6 @@ class AppNavigation {
     Map<String, dynamic> results,
   ) {
     push(context, '/study-results', extra: results);
-  }
-
-  /// Navigate to search
-  static void goSearch(BuildContext context) {
-    push(context, '/search');
   }
 
   /// Navigate to statistics
