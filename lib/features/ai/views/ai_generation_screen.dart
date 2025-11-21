@@ -171,9 +171,13 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   InkWell(
-                    onTap: () => _showDocumentSelectionDialog(materials, provider),
+                    onTap:
+                        () => _showDocumentSelectionDialog(materials, provider),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade400),
                         borderRadius: BorderRadius.circular(4),
@@ -200,11 +204,14 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                                     style: AppTextStyles.bodyMedium,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                if (_selectedMaterials.isNotEmpty && _selectedMaterials.length > 1)
+                                if (_selectedMaterials.isNotEmpty &&
+                                    _selectedMaterials.length > 1)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 4),
                                     child: Text(
-                                      _selectedMaterials.map((m) => m.name).join(', '),
+                                      _selectedMaterials
+                                          .map((m) => m.name)
+                                          .join(', '),
                                       style: AppTextStyles.bodySmall.copyWith(
                                         color: Colors.grey.shade600,
                                       ),
@@ -229,23 +236,28 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                       child: Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: _selectedMaterials.map((material) {
-                          return Chip(
-                            label: Text(
-                              material.name,
-                              style: AppTextStyles.bodySmall,
-                            ),
-                            onDeleted: () {
-                              setState(() {
-                                _selectedMaterials.remove(material);
-                                provider.selectMaterials(_selectedMaterials.toList());
-                              });
-                            },
-                            deleteIcon: const Icon(Icons.close, size: 18),
-                            backgroundColor: AppColors.primary.withOpacity(0.1),
-                            labelStyle: TextStyle(color: AppColors.primary),
-                          );
-                        }).toList(),
+                        children:
+                            _selectedMaterials.map((material) {
+                              return Chip(
+                                label: Text(
+                                  material.name,
+                                  style: AppTextStyles.bodySmall,
+                                ),
+                                onDeleted: () {
+                                  setState(() {
+                                    _selectedMaterials.remove(material);
+                                    provider.selectMaterials(
+                                      _selectedMaterials.toList(),
+                                    );
+                                  });
+                                },
+                                deleteIcon: const Icon(Icons.close, size: 18),
+                                backgroundColor: AppColors.primary.withOpacity(
+                                  0.1,
+                                ),
+                                labelStyle: TextStyle(color: AppColors.primary),
+                              );
+                            }).toList(),
                       ),
                     ),
                 ],
@@ -276,154 +288,166 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (context, scrollController) => StatefulBuilder(
-          builder: (context, setModalState) {
-            return Column(
-              children: [
-                // Handle bar
-                Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 8),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                // Header
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Select Documents',
-                        style: AppTextStyles.titleLarge,
-                      ),
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: () {
-                              setModalState(() {
-                                if (_selectedMaterials.length == materials.length) {
-                                  _selectedMaterials.clear();
-                                } else {
-                                  _selectedMaterials.clear();
-                                  _selectedMaterials.addAll(materials);
-                                }
-                              });
+      builder:
+          (context) => DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder:
+                (context, scrollController) => StatefulBuilder(
+                  builder: (context, setModalState) {
+                    return Column(
+                      children: [
+                        // Handle bar
+                        Container(
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Select Documents',
+                                style: AppTextStyles.titleLarge,
+                              ),
+                              Row(
+                                children: [
+                                  TextButton(
+                                    onPressed: () {
+                                      setModalState(() {
+                                        if (_selectedMaterials.length ==
+                                            materials.length) {
+                                          _selectedMaterials.clear();
+                                        } else {
+                                          _selectedMaterials.clear();
+                                          _selectedMaterials.addAll(materials);
+                                        }
+                                      });
+                                    },
+                                    child: Text(
+                                      _selectedMaterials.length ==
+                                              materials.length
+                                          ? 'Deselect All'
+                                          : 'Select All',
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.close),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(),
+                        // Document list
+                        Expanded(
+                          child: ListView.builder(
+                            controller: scrollController,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            itemCount: materials.length,
+                            itemBuilder: (context, index) {
+                              final material = materials[index];
+                              final isSelected = _selectedMaterials.contains(
+                                material,
+                              );
+                              return CheckboxListTile(
+                                title: Text(
+                                  material.name,
+                                  style: AppTextStyles.bodyMedium,
+                                ),
+                                subtitle: Row(
+                                  children: [
+                                    Icon(
+                                      _getFileTypeIcon(material.fileType),
+                                      size: 16,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _getFileTypeLabel(material.fileType),
+                                      style: AppTextStyles.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                                value: isSelected,
+                                onChanged: (value) {
+                                  setModalState(() {
+                                    if (value == true) {
+                                      _selectedMaterials.add(material);
+                                    } else {
+                                      _selectedMaterials.remove(material);
+                                    }
+                                  });
+                                },
+                                activeColor: AppColors.primary,
+                              );
                             },
-                            child: Text(
-                              _selectedMaterials.length == materials.length
-                                  ? 'Deselect All'
-                                  : 'Select All',
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(),
-                // Document list
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: materials.length,
-                    itemBuilder: (context, index) {
-                      final material = materials[index];
-                      final isSelected = _selectedMaterials.contains(material);
-                      return CheckboxListTile(
-                        title: Text(
-                          material.name,
-                          style: AppTextStyles.bodyMedium,
-                        ),
-                        subtitle: Row(
-                          children: [
-                            Icon(
-                              _getFileTypeIcon(material.fileType),
-                              size: 16,
-                              color: Colors.grey.shade600,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _getFileTypeLabel(material.fileType),
-                              style: AppTextStyles.bodySmall,
-                            ),
-                          ],
-                        ),
-                        value: isSelected,
-                        onChanged: (value) {
-                          setModalState(() {
-                            if (value == true) {
-                              _selectedMaterials.add(material);
-                            } else {
-                              _selectedMaterials.remove(material);
-                            }
-                          });
-                        },
-                        activeColor: AppColors.primary,
-                      );
-                    },
-                  ),
-                ),
-                // Footer with apply button
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _selectedMaterials.isEmpty
-                              ? 'No documents selected'
-                              : '${_selectedMaterials.length} document${_selectedMaterials.length == 1 ? '' : 's'} selected',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: _selectedMaterials.isEmpty
-                                ? Colors.grey.shade600
-                                : AppColors.primary,
                           ),
                         ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            provider.selectMaterials(_selectedMaterials.toList());
-                          });
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                        // Footer with apply button
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, -2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _selectedMaterials.isEmpty
+                                      ? 'No documents selected'
+                                      : '${_selectedMaterials.length} document${_selectedMaterials.length == 1 ? '' : 's'} selected',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color:
+                                        _selectedMaterials.isEmpty
+                                            ? Colors.grey.shade600
+                                            : AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    provider.selectMaterials(
+                                      _selectedMaterials.toList(),
+                                    );
+                                  });
+                                  Navigator.pop(context);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                ),
+                                child: const Text('Apply'),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: const Text('Apply'),
-                      ),
-                    ],
-                  ),
+                      ],
+                    );
+                  },
                 ),
-              ],
-            );
-          },
-        ),
-      ),
+          ),
     );
   }
 
@@ -647,4 +671,3 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     );
   }
 }
-
