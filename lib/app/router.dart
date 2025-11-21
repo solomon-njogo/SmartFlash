@@ -7,6 +7,7 @@ import '../features/auth/views/auth_screen.dart';
 import '../features/home/views/home_screen.dart';
 import '../features/auth/views/profile_screen.dart';
 import '../features/course/views/course_details_screen.dart';
+import '../features/course/views/course_review_history_screen.dart';
 import 'screens/settings_screen.dart';
 import '../features/course/views/create_course_screen.dart' as feature_course;
 import '../features/course/views/edit_course_screen.dart' as feature_course_edit;
@@ -113,6 +114,15 @@ class AppRouter {
         builder: (context, state) {
           final courseId = state.pathParameters['courseId']!;
           return feature_course_edit.EditCourseScreen(courseId: courseId);
+        },
+      ),
+
+      GoRoute(
+        path: '/course-review-history/:courseId',
+        name: 'courseReviewHistory',
+        builder: (context, state) {
+          final courseId = state.pathParameters['courseId']!;
+          return CourseReviewHistoryScreen(courseId: courseId);
         },
       ),
 
@@ -372,6 +382,11 @@ class AppNavigation {
   /// Navigate to edit course
   static void goEditCourse(BuildContext context, String courseId) {
     push(context, '/edit-course/$courseId');
+  }
+
+  /// Navigate to course review history
+  static void goCourseReviewHistory(BuildContext context, String courseId) {
+    push(context, '/course-review-history/$courseId');
   }
 
   /// Navigate to create deck

@@ -4,6 +4,7 @@ import '../../../data/models/quiz_attempt_model.dart';
 import '../../../data/models/question_model.dart';
 import '../../../data/remote/supabase_client.dart';
 import '../../../app/app_text_styles.dart';
+import '../../../app/widgets/next_review_card.dart';
 
 /// Results screen showing quiz attempt performance
 class QuizResultsScreen extends StatefulWidget {
@@ -244,6 +245,14 @@ class _QuizResultsScreenState extends State<QuizResultsScreen> {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 32),
+
+              // Next review card
+              NextReviewCard(
+                itemId: widget.attempt.quizId,
+                userId: widget.attempt.userId,
+                isDeck: false,
               ),
               const SizedBox(height: 32),
 

@@ -156,29 +156,11 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
 
     return Scaffold(
       backgroundColor: colorScheme.background,
-      appBar: AppBar(
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
-        title: Text(
-          _course!.name,
-          style: AppTextStyles.titleLarge.copyWith(
-            color: colorScheme.onSurface,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed:
-                _course == null
-                    ? null
-                    : () => AppNavigation.goEditCourse(context, _course!.id),
-            icon: Icon(Icons.edit, color: colorScheme.onSurface),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Course header
-          _buildCourseHeader(context),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Course header
+            _buildCourseHeader(context),
           // Tab content
           Expanded(
             child: IndexedStack(
@@ -191,6 +173,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
             ),
           ),
         ],
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -274,6 +257,11 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                       ],
                     ],
                   ),
+                ),
+                IconButton(
+                  onPressed: () => AppNavigation.goEditCourse(context, _course!.id),
+                  icon: Icon(Icons.edit, color: colorScheme.onSurface),
+                  tooltip: 'Edit Course',
                 ),
                 IconButton(
                   onPressed: () {
@@ -387,6 +375,24 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                                   }).toList(),
                             ),
                           ],
+                          // Review History Button
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                AppNavigation.goCourseReviewHistory(
+                                  context,
+                                  _course!.id,
+                                );
+                              },
+                              icon: const Icon(Icons.history),
+                              label: const Text('View Review History'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     )
