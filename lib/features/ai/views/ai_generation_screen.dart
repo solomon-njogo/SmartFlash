@@ -22,6 +22,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
   String _difficulty = 'medium';
   bool _hasNavigatedToReview = false;
   AIGenerationProvider? _provider;
+  bool _courseIdSet = false;
 
   @override
   void initState() {
@@ -64,6 +65,14 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Calculate responsive padding and spacing based on screen size
+    final baseWidth = 375.0;
+    final scaleFactor = (screenWidth / baseWidth).clamp(0.8, 1.3);
+    final horizontalPadding = (16 * scaleFactor).clamp(12.0, 24.0);
+    final verticalPadding = (12 * scaleFactor).clamp(8.0, 16.0);
+    final sectionSpacing = (16 * scaleFactor).clamp(12.0, 20.0);
 
     return Scaffold(
       appBar: AppBar(
@@ -76,9 +85,16 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
       ),
       body: Consumer<AIGenerationProvider>(
         builder: (context, provider, child) {
-          // Set courseId in provider if available (only once)
-          if (widget.courseId != null && provider.courseId != widget.courseId) {
-            provider.setCourseId(widget.courseId);
+          // Set courseId in provider if available (only once, after build)
+          if (widget.courseId != null &&
+              !_courseIdSet &&
+              provider.courseId != widget.courseId) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && !_courseIdSet) {
+                _courseIdSet = true;
+                provider.setCourseId(widget.courseId);
+              }
+            });
           }
           // Set up listener on first build
           if (_provider != provider) {
@@ -98,41 +114,45 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
               }
             });
           }
-          final colorScheme = Theme.of(context).colorScheme;
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: verticalPadding,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Material Selection
-                _buildMaterialSelection(provider, colorScheme),
-                const SizedBox(height: 16),
+                _buildMaterialSelection(provider, colorScheme, scaleFactor),
+                SizedBox(height: sectionSpacing),
 
                 // Generation Type Selection
-                _buildGenerationTypeSelection(colorScheme),
-                const SizedBox(height: 16),
+                _buildGenerationTypeSelection(colorScheme, scaleFactor),
+                SizedBox(height: sectionSpacing),
 
                 // Generation Options
                 if (_generationType != null)
-                  _buildGenerationOptions(colorScheme),
-                const SizedBox(height: 16),
+                  _buildGenerationOptions(colorScheme, scaleFactor),
+                SizedBox(height: sectionSpacing),
 
                 // Generate Button
                 if (_selectedMaterials.isNotEmpty && _generationType != null)
-                  _buildGenerateButton(provider),
+                  _buildGenerateButton(provider, scaleFactor),
 
                 // Progress Indicator
-                if (provider.isGenerating) _buildProgressIndicator(provider),
+                if (provider.isGenerating)
+                  _buildProgressIndicator(provider, scaleFactor),
 
                 // Error Display
-                if (provider.error != null) _buildErrorDisplay(provider.error!),
+                if (provider.error != null)
+                  _buildErrorDisplay(provider.error!, scaleFactor),
 
                 // Success - Show message (auto-navigation happens via listener)
                 if (provider.status == GenerationStatus.completed &&
                     provider.hasGeneratedContent &&
                     provider.generationType == GenerationType.flashcards)
-                  _buildSuccessActions(provider),
+                  _buildSuccessActions(provider, scaleFactor),
               ],
             ),
           );
@@ -144,6 +164,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
   Widget _buildMaterialSelection(
     AIGenerationProvider provider,
     ColorScheme colorScheme,
+    double scaleFactor,
   ) {
     final materialsProvider = context.watch<CourseMaterialProvider>();
     var materials =
@@ -162,9 +183,16 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
           materials.where((m) => m.courseId == widget.courseId).toList();
     }
 
+    final cardPadding = (12 * scaleFactor).clamp(10.0, 16.0);
+    final titleSpacing = (10 * scaleFactor).clamp(8.0, 12.0);
+    final chipSpacing = (8 * scaleFactor).clamp(6.0, 12.0);
+    final chipRunSpacing = (8 * scaleFactor).clamp(6.0, 12.0);
+    final innerSpacing = (8 * scaleFactor).clamp(6.0, 12.0);
+    final containerPadding = (14 * scaleFactor).clamp(12.0, 18.0);
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -174,7 +202,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                 color: colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: titleSpacing),
             if (materials.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -193,13 +221,15 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                     onTap:
                         () => _showDocumentSelectionDialog(materials, provider),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: containerPadding,
+                        vertical: containerPadding,
                       ),
                       decoration: BoxDecoration(
                         border: Border.all(color: colorScheme.outline),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(
+                          (12 * scaleFactor).clamp(10.0, 16.0),
+                        ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -253,10 +283,10 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                   ),
                   if (_selectedMaterials.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(top: 8),
+                      padding: EdgeInsets.only(top: innerSpacing),
                       child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: chipSpacing,
+                        runSpacing: chipRunSpacing,
                         children:
                             _selectedMaterials.map((material) {
                               return Chip(
@@ -285,7 +315,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
               ),
             if (_selectedMaterials.isNotEmpty && provider.hasDocumentTextError)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
+                padding: EdgeInsets.only(top: innerSpacing),
                 child: Text(
                   provider.error ?? 'Some document texts are not available',
                   style: AppTextStyles.bodySmall.copyWith(
@@ -305,13 +335,23 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final baseWidth = 375.0;
+    final scaleFactor = (screenWidth / baseWidth).clamp(0.8, 1.3);
+    final handleMargin = (12 * scaleFactor).clamp(10.0, 16.0);
+    final handleBottomMargin = (8 * scaleFactor).clamp(6.0, 12.0);
+    final handleWidth = (40 * scaleFactor).clamp(36.0, 48.0);
+    final handleHeight = (4 * scaleFactor).clamp(3.0, 6.0);
+    final headerPadding = (16 * scaleFactor).clamp(12.0, 20.0);
+    final headerVerticalPadding = (8 * scaleFactor).clamp(6.0, 12.0);
+    final borderRadius = (20 * scaleFactor).clamp(16.0, 24.0);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(borderRadius)),
       ),
       builder:
           (context) => DraggableScrollableSheet(
@@ -326,9 +366,12 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                       children: [
                         // Handle bar
                         Container(
-                          margin: const EdgeInsets.only(top: 12, bottom: 8),
-                          width: 40,
-                          height: 4,
+                          margin: EdgeInsets.only(
+                            top: handleMargin,
+                            bottom: handleBottomMargin,
+                          ),
+                          width: handleWidth,
+                          height: handleHeight,
                           decoration: BoxDecoration(
                             color: colorScheme.outlineVariant,
                             borderRadius: BorderRadius.circular(2),
@@ -336,48 +379,153 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                         ),
                         // Header
                         Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: headerPadding,
+                            vertical: headerVerticalPadding,
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Text(
-                                'Select Documents',
-                                style: AppTextStyles.titleLarge.copyWith(
-                                  color: colorScheme.onSurface,
+                              // Title - flexible to prevent overflow
+                              Flexible(
+                                child: Text(
+                                  'Select Documents',
+                                  style: AppTextStyles.titleLarge.copyWith(
+                                    color: colorScheme.onSurface,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ),
-                              Row(
-                                children: [
-                                  TextButton(
-                                    onPressed: () {
-                                      setModalState(() {
-                                        if (_selectedMaterials.length ==
-                                            materials.length) {
-                                          _selectedMaterials.clear();
-                                        } else {
-                                          _selectedMaterials.clear();
-                                          _selectedMaterials.addAll(materials);
-                                        }
-                                      });
-                                    },
-                                    child: Text(
-                                      _selectedMaterials.length ==
-                                              materials.length
-                                          ? 'Deselect All'
-                                          : 'Select All',
+                              // Buttons row - flexible and responsive
+                              Flexible(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Use smaller button on small screens
+                                    screenWidth < 360
+                                        ? IconButton(
+                                          icon: Icon(
+                                            _selectedMaterials.length ==
+                                                    materials.length
+                                                ? Icons.deselect
+                                                : Icons.select_all,
+                                            color: colorScheme.primary,
+                                            size: (20 * scaleFactor).clamp(
+                                              18.0,
+                                              24.0,
+                                            ),
+                                          ),
+                                          tooltip:
+                                              _selectedMaterials.length ==
+                                                      materials.length
+                                                  ? 'Deselect All'
+                                                  : 'Select All',
+                                          onPressed: () {
+                                            setModalState(() {
+                                              if (_selectedMaterials.length ==
+                                                  materials.length) {
+                                                _selectedMaterials.clear();
+                                              } else {
+                                                _selectedMaterials.clear();
+                                                _selectedMaterials.addAll(
+                                                  materials,
+                                                );
+                                              }
+                                            });
+                                          },
+                                          padding: EdgeInsets.all(
+                                            (8 * scaleFactor).clamp(4.0, 12.0),
+                                          ),
+                                          constraints: BoxConstraints(
+                                            minWidth: (36 * scaleFactor).clamp(
+                                              32.0,
+                                              48.0,
+                                            ),
+                                            minHeight: (36 * scaleFactor).clamp(
+                                              32.0,
+                                              48.0,
+                                            ),
+                                          ),
+                                        )
+                                        : TextButton(
+                                          onPressed: () {
+                                            setModalState(() {
+                                              if (_selectedMaterials.length ==
+                                                  materials.length) {
+                                                _selectedMaterials.clear();
+                                              } else {
+                                                _selectedMaterials.clear();
+                                                _selectedMaterials.addAll(
+                                                  materials,
+                                                );
+                                              }
+                                            });
+                                          },
+                                          style: TextButton.styleFrom(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: (8 * scaleFactor)
+                                                  .clamp(4.0, 12.0),
+                                              vertical: (4 * scaleFactor).clamp(
+                                                2.0,
+                                                8.0,
+                                              ),
+                                            ),
+                                            minimumSize: Size(
+                                              (60 * scaleFactor).clamp(
+                                                48.0,
+                                                80.0,
+                                              ),
+                                              (32 * scaleFactor).clamp(
+                                                28.0,
+                                                40.0,
+                                              ),
+                                            ),
+                                            tapTargetSize:
+                                                MaterialTapTargetSize
+                                                    .shrinkWrap,
+                                          ),
+                                          child: Text(
+                                            _selectedMaterials.length ==
+                                                    materials.length
+                                                ? 'Deselect All'
+                                                : 'Select All',
+                                            style: TextStyle(
+                                              fontSize: (12 * scaleFactor)
+                                                  .clamp(11.0, 14.0),
+                                            ),
+                                          ),
+                                        ),
+                                    SizedBox(
+                                      width: (4 * scaleFactor).clamp(2.0, 8.0),
                                     ),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.close,
-                                      color: colorScheme.onSurface,
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.close,
+                                        color: colorScheme.onSurface,
+                                        size: (20 * scaleFactor).clamp(
+                                          18.0,
+                                          24.0,
+                                        ),
+                                      ),
+                                      onPressed: () => Navigator.pop(context),
+                                      padding: EdgeInsets.all(
+                                        (8 * scaleFactor).clamp(4.0, 12.0),
+                                      ),
+                                      constraints: BoxConstraints(
+                                        minWidth: (36 * scaleFactor).clamp(
+                                          32.0,
+                                          48.0,
+                                        ),
+                                        minHeight: (36 * scaleFactor).clamp(
+                                          32.0,
+                                          48.0,
+                                        ),
+                                      ),
                                     ),
-                                    onPressed: () => Navigator.pop(context),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -387,7 +535,9 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                         Expanded(
                           child: ListView.builder(
                             controller: scrollController,
-                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            padding: EdgeInsets.symmetric(
+                              vertical: headerVerticalPadding,
+                            ),
                             itemCount: materials.length,
                             itemBuilder: (context, index) {
                               final material = materials[index];
@@ -402,17 +552,27 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                                   ),
                                 ),
                                 subtitle: Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
                                       _getFileTypeIcon(material.fileType),
-                                      size: 16,
+                                      size: (16 * scaleFactor).clamp(
+                                        14.0,
+                                        18.0,
+                                      ),
                                       color: colorScheme.onSurfaceVariant,
                                     ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _getFileTypeLabel(material.fileType),
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
+                                    SizedBox(
+                                      width: (4 * scaleFactor).clamp(3.0, 6.0),
+                                    ),
+                                    Flexible(
+                                      child: Text(
+                                        _getFileTypeLabel(material.fileType),
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
                                       ),
                                     ),
                                   ],
@@ -434,14 +594,17 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                         ),
                         // Footer with apply button
                         Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(headerPadding),
                           decoration: BoxDecoration(
                             color: colorScheme.surface,
                             boxShadow: [
                               BoxShadow(
                                 color: colorScheme.shadow.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, -2),
+                                blurRadius: (10 * scaleFactor).clamp(8.0, 12.0),
+                                offset: Offset(
+                                  0,
+                                  (-2 * scaleFactor).clamp(-3.0, -1.0),
+                                ),
                               ),
                             ],
                           ),
@@ -457,8 +620,17 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                                         _selectedMaterials.isEmpty
                                             ? colorScheme.onSurfaceVariant
                                             : colorScheme.primary,
+                                    fontSize: (14 * scaleFactor).clamp(
+                                      12.0,
+                                      16.0,
+                                    ),
                                   ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
+                              ),
+                              SizedBox(
+                                width: (8 * scaleFactor).clamp(4.0, 12.0),
                               ),
                               ElevatedButton(
                                 onPressed: () {
@@ -472,8 +644,32 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: colorScheme.primary,
                                   foregroundColor: colorScheme.onPrimary,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: (16 * scaleFactor).clamp(
+                                      12.0,
+                                      20.0,
+                                    ),
+                                    vertical: (8 * scaleFactor).clamp(
+                                      6.0,
+                                      12.0,
+                                    ),
+                                  ),
+                                  minimumSize: Size(
+                                    (70 * scaleFactor).clamp(60.0, 90.0),
+                                    (36 * scaleFactor).clamp(32.0, 44.0),
+                                  ),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
-                                child: const Text('Apply'),
+                                child: Text(
+                                  'Apply',
+                                  style: TextStyle(
+                                    fontSize: (14 * scaleFactor).clamp(
+                                      12.0,
+                                      16.0,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -510,10 +706,16 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     }
   }
 
-  Widget _buildGenerationTypeSelection(ColorScheme colorScheme) {
+  Widget _buildGenerationTypeSelection(
+    ColorScheme colorScheme,
+    double scaleFactor,
+  ) {
+    final cardPadding = (12 * scaleFactor).clamp(10.0, 16.0);
+    final titleSpacing = (10 * scaleFactor).clamp(8.0, 12.0);
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -523,40 +725,83 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                 color: colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile<GenerationType>(
-                    title: Text(
-                      'Flashcards',
-                      style: TextStyle(color: colorScheme.onSurface),
+            SizedBox(height: titleSpacing),
+            // Use LayoutBuilder for responsive layout
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // Stack vertically on very small screens (< 320px)
+                if (constraints.maxWidth < 320) {
+                  return Column(
+                    children: [
+                      RadioListTile<GenerationType>(
+                        title: Text(
+                          'Flashcards',
+                          style: TextStyle(color: colorScheme.onSurface),
+                        ),
+                        value: GenerationType.flashcards,
+                        groupValue: _generationType,
+                        onChanged: (value) {
+                          setState(() {
+                            _generationType = value;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      RadioListTile<GenerationType>(
+                        title: Text(
+                          'Quiz',
+                          style: TextStyle(color: colorScheme.onSurface),
+                        ),
+                        value: GenerationType.quiz,
+                        groupValue: _generationType,
+                        onChanged: (value) {
+                          setState(() {
+                            _generationType = value;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ],
+                  );
+                }
+                // Use horizontal layout for larger screens
+                return Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<GenerationType>(
+                        title: Text(
+                          'Flashcards',
+                          style: TextStyle(color: colorScheme.onSurface),
+                        ),
+                        value: GenerationType.flashcards,
+                        groupValue: _generationType,
+                        onChanged: (value) {
+                          setState(() {
+                            _generationType = value;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     ),
-                    value: GenerationType.flashcards,
-                    groupValue: _generationType,
-                    onChanged: (value) {
-                      setState(() {
-                        _generationType = value;
-                      });
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: RadioListTile<GenerationType>(
-                    title: Text(
-                      'Quiz',
-                      style: TextStyle(color: colorScheme.onSurface),
+                    Expanded(
+                      child: RadioListTile<GenerationType>(
+                        title: Text(
+                          'Quiz',
+                          style: TextStyle(color: colorScheme.onSurface),
+                        ),
+                        value: GenerationType.quiz,
+                        groupValue: _generationType,
+                        onChanged: (value) {
+                          setState(() {
+                            _generationType = value;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                      ),
                     ),
-                    value: GenerationType.quiz,
-                    groupValue: _generationType,
-                    onChanged: (value) {
-                      setState(() {
-                        _generationType = value;
-                      });
-                    },
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -564,10 +809,16 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     );
   }
 
-  Widget _buildGenerationOptions(ColorScheme colorScheme) {
+  Widget _buildGenerationOptions(ColorScheme colorScheme, double scaleFactor) {
+    final cardPadding = (12 * scaleFactor).clamp(10.0, 16.0);
+    final titleSpacing = (12 * scaleFactor).clamp(10.0, 16.0);
+    final infoPadding = (12 * scaleFactor).clamp(10.0, 16.0);
+    final borderRadius = (8 * scaleFactor).clamp(6.0, 12.0);
+    final iconSpacing = (8 * scaleFactor).clamp(6.0, 12.0);
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -579,21 +830,22 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                 color: colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: titleSpacing),
             // Info about fixed count
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(infoPadding),
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(borderRadius),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.info_outline,
                     color: colorScheme.onPrimaryContainer,
+                    size: (20 * scaleFactor).clamp(18.0, 24.0),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: iconSpacing),
                   Expanded(
                     child: Text(
                       _generationType == GenerationType.flashcards
@@ -607,13 +859,17 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: titleSpacing),
             // Difficulty
             DropdownButtonFormField<String>(
               value: _difficulty,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Difficulty',
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    (12 * scaleFactor).clamp(10.0, 16.0),
+                  ),
+                ),
               ),
               items:
                   ['easy', 'medium', 'hard']
@@ -631,8 +887,12 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     );
   }
 
-  Widget _buildGenerateButton(AIGenerationProvider provider) {
+  Widget _buildGenerateButton(
+    AIGenerationProvider provider,
+    double scaleFactor,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final buttonPadding = (14 * scaleFactor).clamp(12.0, 18.0);
 
     return ElevatedButton(
       onPressed:
@@ -657,7 +917,11 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
       style: ElevatedButton.styleFrom(
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: EdgeInsets.symmetric(vertical: buttonPadding),
+        minimumSize: Size(
+          double.infinity,
+          (48 * scaleFactor).clamp(44.0, 56.0),
+        ),
       ),
       child: Text(
         'Generate ${_generationType == GenerationType.flashcards ? 'Flashcards' : 'Quiz'}',
@@ -666,16 +930,21 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     );
   }
 
-  Widget _buildProgressIndicator(AIGenerationProvider provider) {
+  Widget _buildProgressIndicator(
+    AIGenerationProvider provider,
+    double scaleFactor,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final cardPadding = (12 * scaleFactor).clamp(10.0, 16.0);
+    final spacing = (8 * scaleFactor).clamp(6.0, 12.0);
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(cardPadding),
         child: Column(
           children: [
             LinearProgressIndicator(value: provider.progress),
-            const SizedBox(height: 8),
+            SizedBox(height: spacing),
             Text(
               'Generating... ${(provider.progress * 100).toInt()}%',
               style: AppTextStyles.bodyMedium.copyWith(
@@ -688,13 +957,14 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     );
   }
 
-  Widget _buildErrorDisplay(String error) {
+  Widget _buildErrorDisplay(String error, double scaleFactor) {
     final colorScheme = Theme.of(context).colorScheme;
+    final cardPadding = (12 * scaleFactor).clamp(10.0, 16.0);
 
     return Card(
       color: colorScheme.errorContainer,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(cardPadding),
         child: Text(
           error,
           style: AppTextStyles.bodyMedium.copyWith(
@@ -705,13 +975,18 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     );
   }
 
-  Widget _buildSuccessActions(AIGenerationProvider provider) {
+  Widget _buildSuccessActions(
+    AIGenerationProvider provider,
+    double scaleFactor,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final cardPadding = (12 * scaleFactor).clamp(10.0, 16.0);
+    final spacing = (12 * scaleFactor).clamp(10.0, 16.0);
 
     return Card(
       color: colorScheme.tertiaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(cardPadding),
         child: Column(
           children: [
             Text(
@@ -720,17 +995,21 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                 color: colorScheme.onTertiaryContainer,
               ),
             ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () {
-                // Navigate to review screen
-                AppNavigation.goAIReview(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
+            SizedBox(height: spacing),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  // Navigate to review screen
+                  AppNavigation.goAIReview(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  minimumSize: Size(0, (48 * scaleFactor).clamp(44.0, 56.0)),
+                ),
+                child: const Text('Review & Accept'),
               ),
-              child: const Text('Review & Accept'),
             ),
           ],
         ),
