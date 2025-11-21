@@ -387,6 +387,24 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen>
                                   }).toList(),
                             ),
                           ],
+                          // Review History Button
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                AppNavigation.goCourseReviewHistory(
+                                  context,
+                                  _course!.id,
+                                );
+                              },
+                              icon: const Icon(Icons.history),
+                              label: const Text('View Review History'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     )
