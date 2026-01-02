@@ -14,7 +14,10 @@ import '../core/providers/ai_review_provider.dart';
 import '../core/providers/flashcard_provider.dart';
 import '../core/providers/flashcard_review_provider.dart';
 import '../core/providers/search_provider.dart';
+import '../core/providers/onboarding_provider.dart';
 import '../data/remote/supabase_client.dart';
+import '../data/local/hive_service.dart';
+import '../core/utils/logger.dart';
 
 /// Main application widget with MaterialApp configuration
 class SmartFlashApp extends StatelessWidget {
@@ -36,6 +39,7 @@ class SmartFlashApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FlashcardProvider()),
         ChangeNotifierProvider(create: (_) => FlashcardReviewProvider()),
         ChangeNotifierProvider(create: (_) => SearchProvider()),
+        ChangeNotifierProvider(create: (_) => OnboardingProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -101,6 +105,14 @@ class AppConfig {
 
   /// Initialize app-wide configurations
   static Future<void> initialize() async {
+    // Initialize HiveService
+    try {
+      await HiveService.instance.initialize();
+    } catch (e) {
+      // If HiveService is already initialized, that's fine
+      Logger.error('Failed to initialize HiveService: $e');
+    }
+
     // Initialize SupabaseService
     try {
       await SupabaseService.instance.initialize();

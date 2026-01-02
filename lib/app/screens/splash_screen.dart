@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_name.dart';
 import '../widgets/app_logo.dart';
+import '../router.dart';
+import '../../core/providers/onboarding_provider.dart';
+import '../../data/local/hive_service.dart';
 
 /// Splash screen shown during app initialization (Enhanced with animations)
 class SplashScreen extends StatefulWidget {
@@ -20,7 +25,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize animation controller with spring-like curve
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1200),
@@ -28,10 +33,7 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     // Fade animation for logo
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
@@ -39,10 +41,7 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     // Scale animation for logo (spring effect)
-    _scaleAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
@@ -54,6 +53,61 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Haptic feedback (light impact)
     HapticFeedback.lightImpact();
+
+    // Navigate after animation completes
+    _navigateAfterDelay();
+  }
+
+  Future<void> _navigateAfterDelay() async {
+    // Wait for animation to complete
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    if (!mounted) return;
+
+    // Ensure HiveService is initialized
+    try {
+      if (!HiveService.instance.isInitialized) {
+        await HiveService.instance.initialize();
+      }
+    } catch (e) {
+      // If initialization fails, continue anyway
+    }
+
+    if (!mounted) return;
+
+    final isAuthenticated =
+        Supabase.instance.client.auth.currentSession?.user != null;
+
+    // Check onboarding status
+    try {
+      final onboardingProvider = Provider.of<OnboardingProvider>(
+        context,
+        listen: false,
+      );
+      final hasCompletedOnboarding =
+          await onboardingProvider.hasCompletedOnboarding();
+
+      if (!mounted) return;
+
+      if (!hasCompletedOnboarding) {
+        // Navigate to onboarding
+        AppNavigation.pushAndRemoveUntil(context, '/onboarding');
+      } else if (isAuthenticated) {
+        // Navigate to home
+        AppNavigation.pushAndRemoveUntil(context, '/home');
+      } else {
+        // Navigate to auth
+        AppNavigation.pushAndRemoveUntil(context, '/auth');
+      }
+    } catch (e) {
+      // On error, default to auth/home based on authentication
+      if (!mounted) return;
+      if (isAuthenticated) {
+        AppNavigation.pushAndRemoveUntil(context, '/home');
+      } else {
+        AppNavigation.pushAndRemoveUntil(context, '/auth');
+      }
+    }
   }
 
   @override
@@ -90,7 +144,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Animated app name
                   SlideTransition(
                     position: Tween<Offset>(
@@ -99,7 +153,11 @@ class _SplashScreenState extends State<SplashScreen>
                     ).animate(
                       CurvedAnimation(
                         parent: _controller,
-                        curve: const Interval(0.4, 1.0, curve: Curves.easeOutCubic),
+                        curve: const Interval(
+                          0.4,
+                          1.0,
+                          curve: Curves.easeOutCubic,
+                        ),
                       ),
                     ),
                     child: FadeTransition(
@@ -111,13 +169,10 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                   ),
                   const SizedBox(height: 48),
-                  
+
                   // Loading indicator
                   FadeTransition(
-                    opacity: Tween<double>(
-                      begin: 0.0,
-                      end: 1.0,
-                    ).animate(
+                    opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
                       CurvedAnimation(
                         parent: _controller,
                         curve: const Interval(0.6, 1.0, curve: Curves.easeIn),

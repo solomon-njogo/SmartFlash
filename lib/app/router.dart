@@ -30,6 +30,11 @@ import '../features/deck/views/study_session_screen.dart';
 import '../features/deck/views/study_results_screen.dart';
 import 'screens/statistics_screen.dart';
 import 'screens/not_found_screen.dart';
+import '../features/onboarding/views/onboarding_welcome_screen.dart';
+import '../features/onboarding/views/onboarding_quiz_screen.dart';
+import '../features/onboarding/views/onboarding_building_screen.dart';
+import '../features/onboarding/views/onboarding_permissions_screen.dart';
+import '../features/onboarding/views/onboarding_complete_screen.dart';
 
 /// App router configuration using GoRouter
 class AppRouter {
@@ -47,15 +52,16 @@ class AppRouter {
           Supabase.instance.client.auth.currentSession?.user != null;
       final isAuthRoute = state.matchedLocation.startsWith('/auth');
       final isSplashRoute = state.matchedLocation == '/';
+      final isOnboardingRoute = state.matchedLocation.startsWith('/onboarding');
 
-      // If user is not authenticated and not on auth or splash routes, redirect to auth
-      if (!isAuthenticated && !isAuthRoute && !isSplashRoute) {
-        return '/auth';
+      // Allow splash screen to handle onboarding check (async)
+      if (isSplashRoute) {
+        return null; // Let splash screen navigate
       }
 
-      // If on splash, decide based on current auth state
-      if (isSplashRoute) {
-        return isAuthenticated ? '/home' : '/auth';
+      // If user is not authenticated and not on auth or onboarding routes
+      if (!isAuthenticated && !isAuthRoute && !isOnboardingRoute) {
+        return '/auth';
       }
 
       // If user is authenticated and on auth route, redirect to home
@@ -71,6 +77,33 @@ class AppRouter {
         path: '/',
         name: 'splash',
         builder: (context, state) => const SplashScreen(),
+      ),
+
+      // Onboarding routes
+      GoRoute(
+        path: '/onboarding',
+        name: 'onboarding',
+        builder: (context, state) => const OnboardingWelcomeScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding/quiz',
+        name: 'onboardingQuiz',
+        builder: (context, state) => const OnboardingQuizScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding/building',
+        name: 'onboardingBuilding',
+        builder: (context, state) => const OnboardingBuildingScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding/permissions',
+        name: 'onboardingPermissions',
+        builder: (context, state) => const OnboardingPermissionsScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding/complete',
+        name: 'onboardingComplete',
+        builder: (context, state) => const OnboardingCompleteScreen(),
       ),
 
       // Auth routes

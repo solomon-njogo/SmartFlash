@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// Reusable app logo widget that displays the official app logo (white flash on blue)
+/// Reusable app logo widget that displays the official app logo
 class AppLogo extends StatelessWidget {
   /// The size of the square logo widget
   final double size;
@@ -37,11 +37,23 @@ class AppLogo extends StatelessWidget {
           ),
         ],
       ),
-      child: Center(
-        child: Icon(
-          Icons.flash_on,
-          size: size * 0.5,
-          color: AppColors.textOnPrimary,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Image.asset(
+          'assets/app_icons/Frame 12.png',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            // Fallback to icon if image fails to load
+            return Center(
+              child: Icon(
+                Icons.flash_on,
+                size: size * 0.5,
+                color: AppColors.textOnPrimary,
+              ),
+            );
+          },
         ),
       ),
     );
