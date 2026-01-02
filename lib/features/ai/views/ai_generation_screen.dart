@@ -5,6 +5,7 @@ import '../../../core/providers/course_material_provider.dart';
 import '../../../data/models/course_material_model.dart';
 import '../../../app/app_text_styles.dart';
 import '../../../app/router.dart';
+import '../../../app/theme/app_colors.dart';
 
 /// Screen for AI content generation
 class AIGenerationScreen extends StatefulWidget {
@@ -74,16 +75,59 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     final verticalPadding = (12 * scaleFactor).clamp(8.0, 16.0);
     final sectionSpacing = (16 * scaleFactor).clamp(12.0, 20.0);
 
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'AI Content Generation',
-          style: AppTextStyles.titleLarge.copyWith(
-            color: theme.appBarTheme.foregroundColor ?? colorScheme.onSurface,
-          ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: isDark 
+                    ? AppColors.primaryGradientDark 
+                    : AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.auto_awesome,
+                size: 20,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'AI Content Generation',
+              style: AppTextStyles.titleLarge.copyWith(
+                color: theme.appBarTheme.foregroundColor ?? colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
+        elevation: 0,
       ),
-      body: Consumer<AIGenerationProvider>(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    colorScheme.background,
+                    colorScheme.surface.withOpacity(0.3),
+                  ],
+                )
+              : LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    colorScheme.background,
+                    colorScheme.surfaceVariant.withOpacity(0.5),
+                  ],
+                ),
+        ),
+        child: Consumer<AIGenerationProvider>(
         builder: (context, provider, child) {
           // Set courseId in provider if available (only once, after build)
           if (widget.courseId != null &&
@@ -124,39 +168,40 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Material Selection
-                _buildMaterialSelection(provider, colorScheme, scaleFactor),
+                _buildMaterialSelection(provider, colorScheme, scaleFactor, isDark),
                 SizedBox(height: sectionSpacing),
 
                 // Generation Type Selection
-                _buildGenerationTypeSelection(colorScheme, scaleFactor),
+                _buildGenerationTypeSelection(colorScheme, scaleFactor, isDark),
                 SizedBox(height: sectionSpacing),
 
                 // Generation Options
                 if (_generationType != null)
-                  _buildGenerationOptions(colorScheme, scaleFactor),
+                  _buildGenerationOptions(colorScheme, scaleFactor, isDark),
                 SizedBox(height: sectionSpacing),
 
                 // Generate Button
                 if (_selectedMaterials.isNotEmpty && _generationType != null)
-                  _buildGenerateButton(provider, scaleFactor),
+                  _buildGenerateButton(provider, scaleFactor, isDark),
 
                 // Progress Indicator
                 if (provider.isGenerating)
-                  _buildProgressIndicator(provider, scaleFactor),
+                  _buildProgressIndicator(provider, scaleFactor, isDark),
 
                 // Error Display
                 if (provider.error != null)
-                  _buildErrorDisplay(provider.error!, scaleFactor),
+                  _buildErrorDisplay(provider.error!, scaleFactor, isDark),
 
                 // Success - Show message (auto-navigation happens via listener)
                 if (provider.status == GenerationStatus.completed &&
                     provider.hasGeneratedContent &&
                     provider.generationType == GenerationType.flashcards)
-                  _buildSuccessActions(provider, scaleFactor),
+                  _buildSuccessActions(provider, scaleFactor, isDark),
               ],
             ),
           );
         },
+        ),
       ),
     );
   }
@@ -165,6 +210,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     AIGenerationProvider provider,
     ColorScheme colorScheme,
     double scaleFactor,
+    bool isDark,
   ) {
     final materialsProvider = context.watch<CourseMaterialProvider>();
     var materials =
@@ -190,17 +236,56 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     final innerSpacing = (8 * scaleFactor).clamp(6.0, 12.0);
     final containerPadding = (14 * scaleFactor).clamp(12.0, 18.0);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark 
+            ? colorScheme.surface.withOpacity(0.6)
+            : colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark 
+              ? colorScheme.outline.withOpacity(0.3)
+              : colorScheme.outline.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark 
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: EdgeInsets.all(cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Select Documents',
-              style: AppTextStyles.titleLarge.copyWith(
-                color: colorScheme.onSurface,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.description_outlined,
+                    color: colorScheme.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Select Documents',
+                  style: AppTextStyles.titleLarge.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: titleSpacing),
             if (materials.isEmpty)
@@ -226,10 +311,14 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                         vertical: containerPadding,
                       ),
                       decoration: BoxDecoration(
-                        border: Border.all(color: colorScheme.outline),
-                        borderRadius: BorderRadius.circular(
-                          (12 * scaleFactor).clamp(10.0, 16.0),
+                        color: isDark
+                            ? colorScheme.surfaceVariant.withOpacity(0.3)
+                            : colorScheme.surfaceVariant.withOpacity(0.5),
+                        border: Border.all(
+                          color: colorScheme.outline.withOpacity(0.3),
+                          width: 1.5,
                         ),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -273,9 +362,16 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                               ],
                             ),
                           ),
-                          Icon(
-                            Icons.arrow_drop_down,
-                            color: colorScheme.onSurfaceVariant,
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primaryContainer.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.arrow_drop_down,
+                              color: colorScheme.primary,
+                            ),
                           ),
                         ],
                       ),
@@ -289,23 +385,43 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                         runSpacing: chipRunSpacing,
                         children:
                             _selectedMaterials.map((material) {
-                              return Chip(
-                                label: Text(
-                                  material.name,
-                                  style: AppTextStyles.bodySmall,
+                              return Container(
+                                decoration: BoxDecoration(
+                                  gradient: isDark
+                                      ? AppColors.primaryGradientDark
+                                      : AppColors.primaryGradientSoft,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colorScheme.primary.withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
-                                onDeleted: () {
-                                  setState(() {
-                                    _selectedMaterials.remove(material);
-                                    provider.selectMaterials(
-                                      _selectedMaterials.toList(),
-                                    );
-                                  });
-                                },
-                                deleteIcon: const Icon(Icons.close, size: 18),
-                                backgroundColor: colorScheme.primaryContainer,
-                                labelStyle: TextStyle(
-                                  color: colorScheme.onPrimaryContainer,
+                                child: Chip(
+                                  label: Text(
+                                    material.name,
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  onDeleted: () {
+                                    setState(() {
+                                      _selectedMaterials.remove(material);
+                                      provider.selectMaterials(
+                                        _selectedMaterials.toList(),
+                                      );
+                                    });
+                                  },
+                                  deleteIcon: const Icon(
+                                    Icons.close,
+                                    size: 18,
+                                    color: Colors.white,
+                                  ),
+                                  backgroundColor: Colors.transparent,
+                                  deleteIconColor: Colors.white,
                                 ),
                               );
                             }).toList(),
@@ -709,99 +825,95 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
   Widget _buildGenerationTypeSelection(
     ColorScheme colorScheme,
     double scaleFactor,
+    bool isDark,
   ) {
     final cardPadding = (12 * scaleFactor).clamp(10.0, 16.0);
-    final titleSpacing = (10 * scaleFactor).clamp(8.0, 12.0);
+    final titleSpacing = (16 * scaleFactor).clamp(12.0, 20.0);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark 
+            ? colorScheme.surface.withOpacity(0.6)
+            : colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark 
+              ? colorScheme.outline.withOpacity(0.3)
+              : colorScheme.outline.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark 
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: EdgeInsets.all(cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Content Type',
-              style: AppTextStyles.titleLarge.copyWith(
-                color: colorScheme.onSurface,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.category_outlined,
+                    color: colorScheme.secondary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Content Type',
+                  style: AppTextStyles.titleLarge.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: titleSpacing),
-            // Use LayoutBuilder for responsive layout
-            LayoutBuilder(
-              builder: (context, constraints) {
-                // Stack vertically on very small screens (< 320px)
-                if (constraints.maxWidth < 320) {
-                  return Column(
-                    children: [
-                      RadioListTile<GenerationType>(
-                        title: Text(
-                          'Flashcards',
-                          style: TextStyle(color: colorScheme.onSurface),
-                        ),
-                        value: GenerationType.flashcards,
-                        groupValue: _generationType,
-                        onChanged: (value) {
-                          setState(() {
-                            _generationType = value;
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      RadioListTile<GenerationType>(
-                        title: Text(
-                          'Quiz',
-                          style: TextStyle(color: colorScheme.onSurface),
-                        ),
-                        value: GenerationType.quiz,
-                        groupValue: _generationType,
-                        onChanged: (value) {
-                          setState(() {
-                            _generationType = value;
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ],
-                  );
-                }
-                // Use horizontal layout for larger screens
-                return Row(
-                  children: [
-                    Expanded(
-                      child: RadioListTile<GenerationType>(
-                        title: Text(
-                          'Flashcards',
-                          style: TextStyle(color: colorScheme.onSurface),
-                        ),
-                        value: GenerationType.flashcards,
-                        groupValue: _generationType,
-                        onChanged: (value) {
-                          setState(() {
-                            _generationType = value;
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
+            // Modern toggle buttons
+            Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? colorScheme.surfaceVariant.withOpacity(0.3)
+                    : colorScheme.surfaceVariant.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.all(4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildTypeToggle(
+                      GenerationType.flashcards,
+                      'Flashcards',
+                      Icons.style_outlined,
+                      colorScheme,
+                      isDark,
                     ),
-                    Expanded(
-                      child: RadioListTile<GenerationType>(
-                        title: Text(
-                          'Quiz',
-                          style: TextStyle(color: colorScheme.onSurface),
-                        ),
-                        value: GenerationType.quiz,
-                        groupValue: _generationType,
-                        onChanged: (value) {
-                          setState(() {
-                            _generationType = value;
-                          });
-                        },
-                        contentPadding: EdgeInsets.zero,
-                      ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildTypeToggle(
+                      GenerationType.quiz,
+                      'Quiz',
+                      Icons.quiz_outlined,
+                      colorScheme,
+                      isDark,
                     ),
-                  ],
-                );
-              },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -809,41 +921,171 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     );
   }
 
-  Widget _buildGenerationOptions(ColorScheme colorScheme, double scaleFactor) {
-    final cardPadding = (12 * scaleFactor).clamp(10.0, 16.0);
-    final titleSpacing = (12 * scaleFactor).clamp(10.0, 16.0);
-    final infoPadding = (12 * scaleFactor).clamp(10.0, 16.0);
-    final borderRadius = (8 * scaleFactor).clamp(6.0, 12.0);
-    final iconSpacing = (8 * scaleFactor).clamp(6.0, 12.0);
+  Widget _buildTypeToggle(
+    GenerationType type,
+    String label,
+    IconData icon,
+    ColorScheme colorScheme,
+    bool isDark,
+  ) {
+    final isSelected = _generationType == type;
+    
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _generationType = type;
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? (isDark
+                  ? AppColors.primaryGradientDark
+                  : AppColors.primaryGradient)
+              : null,
+          color: isSelected ? null : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: colorScheme.primary.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected
+                  ? Colors.white
+                  : colorScheme.onSurfaceVariant,
+              size: 24,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: isSelected
+                    ? Colors.white
+                    : colorScheme.onSurfaceVariant,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-    return Card(
+  Widget _buildGenerationOptions(
+    ColorScheme colorScheme,
+    double scaleFactor,
+    bool isDark,
+  ) {
+    final cardPadding = (12 * scaleFactor).clamp(10.0, 16.0);
+    final titleSpacing = (16 * scaleFactor).clamp(12.0, 20.0);
+    final infoPadding = (14 * scaleFactor).clamp(12.0, 18.0);
+    final borderRadius = 16.0;
+    final iconSpacing = (12 * scaleFactor).clamp(10.0, 16.0);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark 
+            ? colorScheme.surface.withOpacity(0.6)
+            : colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark 
+              ? colorScheme.outline.withOpacity(0.3)
+              : colorScheme.outline.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark 
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: EdgeInsets.all(cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              _generationType == GenerationType.flashcards
-                  ? 'Flashcard Options'
-                  : 'Quiz Options',
-              style: AppTextStyles.titleMedium.copyWith(
-                color: colorScheme.onSurface,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.tertiaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.tune_outlined,
+                    color: colorScheme.tertiary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  _generationType == GenerationType.flashcards
+                      ? 'Flashcard Options'
+                      : 'Quiz Options',
+                  style: AppTextStyles.titleMedium.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: titleSpacing),
             // Info about fixed count
             Container(
               padding: EdgeInsets.all(infoPadding),
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
+                gradient: isDark
+                    ? LinearGradient(
+                        colors: [
+                          colorScheme.primaryContainer.withOpacity(0.4),
+                          colorScheme.primaryContainer.withOpacity(0.2),
+                        ],
+                      )
+                    : LinearGradient(
+                        colors: [
+                          colorScheme.primaryContainer.withOpacity(0.6),
+                          colorScheme.primaryContainer.withOpacity(0.4),
+                        ],
+                      ),
                 borderRadius: BorderRadius.circular(borderRadius),
+                border: Border.all(
+                  color: colorScheme.primary.withOpacity(0.2),
+                  width: 1,
+                ),
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: colorScheme.onPrimaryContainer,
-                    size: (20 * scaleFactor).clamp(18.0, 24.0),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.info_outline,
+                      color: colorScheme.primary,
+                      size: 18,
+                    ),
                   ),
                   SizedBox(width: iconSpacing),
                   Expanded(
@@ -853,6 +1095,7 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
                           : 'Will generate 10 multiple choice questions',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -860,28 +1103,78 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
               ),
             ),
             SizedBox(height: titleSpacing),
-            // Difficulty
-            DropdownButtonFormField<String>(
-              value: _difficulty,
-              decoration: InputDecoration(
-                labelText: 'Difficulty',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(
-                    (12 * scaleFactor).clamp(10.0, 16.0),
-                  ),
-                ),
+            // Difficulty selector with modern design
+            Text(
+              'Difficulty Level',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
               ),
-              items:
-                  ['easy', 'medium', 'hard']
-                      .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                      .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _difficulty = value ?? 'medium';
-                });
-              },
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? colorScheme.surfaceVariant.withOpacity(0.3)
+                    : colorScheme.surfaceVariant.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.all(4),
+              child: Row(
+                children: ['easy', 'medium', 'hard'].map((difficulty) {
+                  final isSelected = _difficulty == difficulty;
+                  return Expanded(
+                    child: _buildDifficultyToggle(
+                      difficulty,
+                      isSelected,
+                      colorScheme,
+                      isDark,
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDifficultyToggle(
+    String difficulty,
+    bool isSelected,
+    ColorScheme colorScheme,
+    bool isDark,
+  ) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _difficulty = difficulty;
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark
+                  ? colorScheme.primaryContainer
+                  : colorScheme.primaryContainer)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Text(
+            difficulty.toUpperCase(),
+            style: AppTextStyles.bodySmall.copyWith(
+              color: isSelected
+                  ? colorScheme.onPrimaryContainer
+                  : colorScheme.onSurfaceVariant,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            ),
+          ),
         ),
       ),
     );
@@ -890,42 +1183,70 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
   Widget _buildGenerateButton(
     AIGenerationProvider provider,
     double scaleFactor,
+    bool isDark,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    final buttonPadding = (14 * scaleFactor).clamp(12.0, 18.0);
+    final buttonPadding = (16 * scaleFactor).clamp(14.0, 20.0);
 
-    return ElevatedButton(
-      onPressed:
-          provider.isGenerating
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? AppColors.primaryGradientDark
+            : AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withOpacity(0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: provider.isGenerating
               ? null
               : () {
-                if (_generationType == GenerationType.flashcards) {
-                  provider.generateFlashcards(
-                    deckId: 'deck_${DateTime.now().millisecondsSinceEpoch}',
-                    count: 10, // Fixed to 10
-                    difficulty: _difficulty,
-                    cardTypes: ['basic'], // Default card type
-                  );
-                } else {
-                  provider.generateQuiz(
-                    questionCount: 10, // Fixed to 10
-                    difficulty: _difficulty,
-                    questionTypes: ['multipleChoice'], // Only MCQs
-                  );
-                }
-              },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        padding: EdgeInsets.symmetric(vertical: buttonPadding),
-        minimumSize: Size(
-          double.infinity,
-          (48 * scaleFactor).clamp(44.0, 56.0),
+                  if (_generationType == GenerationType.flashcards) {
+                    provider.generateFlashcards(
+                      deckId: 'deck_${DateTime.now().millisecondsSinceEpoch}',
+                      count: 10, // Fixed to 10
+                      difficulty: _difficulty,
+                      cardTypes: ['basic'], // Default card type
+                    );
+                  } else {
+                    provider.generateQuiz(
+                      questionCount: 10, // Fixed to 10
+                      difficulty: _difficulty,
+                      questionTypes: ['multipleChoice'], // Only MCQs
+                    );
+                  }
+                },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: EdgeInsets.symmetric(vertical: buttonPadding),
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.auto_awesome,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Generate ${_generationType == GenerationType.flashcards ? 'Flashcards' : 'Quiz'}',
+                  style: AppTextStyles.titleMedium.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
-      child: Text(
-        'Generate ${_generationType == GenerationType.flashcards ? 'Flashcards' : 'Quiz'}',
-        style: AppTextStyles.titleMedium.copyWith(color: colorScheme.onPrimary),
       ),
     );
   }
@@ -933,22 +1254,86 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
   Widget _buildProgressIndicator(
     AIGenerationProvider provider,
     double scaleFactor,
+    bool isDark,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    final cardPadding = (12 * scaleFactor).clamp(10.0, 16.0);
-    final spacing = (8 * scaleFactor).clamp(6.0, 12.0);
+    final cardPadding = (16 * scaleFactor).clamp(14.0, 20.0);
+    final spacing = (12 * scaleFactor).clamp(10.0, 16.0);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark 
+            ? colorScheme.surface.withOpacity(0.6)
+            : colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark 
+              ? colorScheme.outline.withOpacity(0.3)
+              : colorScheme.outline.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark 
+                ? Colors.black.withOpacity(0.3)
+                : Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: EdgeInsets.all(cardPadding),
         child: Column(
           children: [
-            LinearProgressIndicator(value: provider.progress),
+            Row(
+              children: [
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Generating content...',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${(provider.progress * 100).toInt()}% complete',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             SizedBox(height: spacing),
-            Text(
-              'Generating... ${(provider.progress * 100).toInt()}%',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: colorScheme.onSurface,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: provider.progress,
+                minHeight: 6,
+                backgroundColor: isDark
+                    ? colorScheme.surfaceVariant.withOpacity(0.3)
+                    : colorScheme.surfaceVariant,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  colorScheme.primary,
+                ),
               ),
             ),
           ],
@@ -957,19 +1342,54 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
     );
   }
 
-  Widget _buildErrorDisplay(String error, double scaleFactor) {
+  Widget _buildErrorDisplay(String error, double scaleFactor, bool isDark) {
     final colorScheme = Theme.of(context).colorScheme;
-    final cardPadding = (12 * scaleFactor).clamp(10.0, 16.0);
+    final cardPadding = (16 * scaleFactor).clamp(14.0, 20.0);
 
-    return Card(
-      color: colorScheme.errorContainer,
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colorScheme.error.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.error.withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: EdgeInsets.all(cardPadding),
-        child: Text(
-          error,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: colorScheme.onErrorContainer,
-          ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.error.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.error_outline,
+                color: colorScheme.error,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                error,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: colorScheme.onErrorContainer,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -978,37 +1398,116 @@ class _AIGenerationScreenState extends State<AIGenerationScreen> {
   Widget _buildSuccessActions(
     AIGenerationProvider provider,
     double scaleFactor,
+    bool isDark,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    final cardPadding = (12 * scaleFactor).clamp(10.0, 16.0);
-    final spacing = (12 * scaleFactor).clamp(10.0, 16.0);
+    final cardPadding = (16 * scaleFactor).clamp(14.0, 20.0);
+    final spacing = (16 * scaleFactor).clamp(14.0, 20.0);
 
-    return Card(
-      color: colorScheme.tertiaryContainer,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? LinearGradient(
+                colors: [
+                  colorScheme.tertiaryContainer.withOpacity(0.6),
+                  colorScheme.tertiaryContainer.withOpacity(0.4),
+                ],
+              )
+            : LinearGradient(
+                colors: [
+                  colorScheme.tertiaryContainer,
+                  colorScheme.tertiaryContainer.withOpacity(0.8),
+                ],
+              ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colorScheme.tertiary.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.tertiary.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: EdgeInsets.all(cardPadding),
         child: Column(
           children: [
-            Text(
-              'Generation Complete!',
-              style: AppTextStyles.titleMedium.copyWith(
-                color: colorScheme.onTertiaryContainer,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: colorScheme.tertiary.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_circle_outline,
+                    color: colorScheme.tertiary,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Generation Complete!',
+                  style: AppTextStyles.titleMedium.copyWith(
+                    color: colorScheme.onTertiaryContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: spacing),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  // Navigate to review screen
-                  AppNavigation.goAIReview(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  minimumSize: Size(0, (48 * scaleFactor).clamp(44.0, 56.0)),
+            Container(
+              decoration: BoxDecoration(
+                gradient: isDark
+                    ? AppColors.primaryGradientDark
+                    : AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.primary.withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    AppNavigation.goAIReview(context);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      vertical: (16 * scaleFactor).clamp(14.0, 20.0),
+                    ),
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.visibility_outlined,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Review & Accept',
+                          style: AppTextStyles.titleMedium.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                child: const Text('Review & Accept'),
               ),
             ),
           ],
