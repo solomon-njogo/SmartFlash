@@ -13,6 +13,7 @@ import '../../../app/widgets/course_card.dart';
 import '../../../app/widgets/upcoming_reviews_section.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/error_widget.dart' as custom_error;
+import '../../../core/providers/onboarding_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,8 +22,40 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   final GlobalKey _reviewsKey = GlobalKey();
+  late AnimationController _pulseController;
+  bool _isNewUser = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+    _checkIfNewUser();
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkIfNewUser() async {
+    final onboardingProvider =
+        Provider.of<OnboardingProvider>(context, listen: false);
+    final hasCompleted = await onboardingProvider.hasCompletedOnboarding();
+    final preferences = await onboardingProvider.getOnboardingPreferences();
+    
+    if (mounted) {
+      setState(() {
+        _isNewUser = hasCompleted && preferences != null;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +214,101 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // Enhanced empty state for new users (after onboarding)
+    if (_isNewUser) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Welcome icon with pulse animation
+              AnimatedBuilder(
+                animation: _pulseController,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: 1.0 + (_pulseController.value * 0.1),
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.auto_awesome,
+                        size: 50,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 32),
+              Text(
+                "You're all set!",
+                style: AppTextStyles.headlineMedium.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Create your first course to organize your study materials and start learning with AI-powered flashcards.',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 48),
+              // Pulsing CTA button
+              AnimatedBuilder(
+                animation: _pulseController,
+                builder: (context, child) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: colorScheme.primary.withOpacity(
+                            0.3 + (_pulseController.value * 0.2),
+                          ),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        HapticFeedback.mediumImpact();
+                        AppNavigation.goCreateCourse(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                        minimumSize: const Size(200, 56),
+                      ),
+                      child: Text(
+                        'Create Your First Course',
+                        style: AppTextStyles.button.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Standard empty state
     return Center(
       child: custom_error.EmptyStateWidget(
         title: "Let's get started",
