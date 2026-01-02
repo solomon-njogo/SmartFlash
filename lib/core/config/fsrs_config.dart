@@ -28,7 +28,7 @@ class FSRSConfig {
   static const double defaultRequestRetention = 0.9;
 
   /// Maximum interval in days
-  static const int maxInterval = 36500; // ~100 years
+  static const int maxInterval = 365; // ~1 year
 
   /// Minimum interval in days
   static const int minInterval = 1;

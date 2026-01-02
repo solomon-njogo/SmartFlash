@@ -63,7 +63,7 @@ class AppTheme {
       ),
 
       // Card theme (Enhanced with modern corner radius 16dp)
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.surface,
         elevation: 2,
         shadowColor: AppColors.shadow,
@@ -322,7 +322,7 @@ class AppTheme {
       ),
 
       // Card theme - Using elevation-based surface colors (Enhanced with modern corner radius 16dp)
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.surfaceDarkElevation2, // Elevated surface
         elevation: 2,
         shadowColor: AppColors.shadowDarkTheme,
