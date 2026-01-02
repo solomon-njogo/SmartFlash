@@ -74,23 +74,6 @@ class OnboardingWelcomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              // Skip link (subtle)
-              TextButton(
-                onPressed: () {
-                  HapticFeedback.selectionClick();
-                  AppNavigation.push(context, '/onboarding/quiz');
-                },
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                ),
-                child: Text(
-                  'Skip',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
               const SizedBox(height: 32),
             ],
           ),
