@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../../../app/router.dart';
 import '../../../app/app_text_styles.dart';
 import '../../../core/providers/onboarding_provider.dart';
+import '../../../core/services/permission_service.dart';
 
 /// Permission priming screen - Contextual permission request
 class OnboardingPermissionsScreen extends StatefulWidget {
@@ -50,7 +50,7 @@ class _OnboardingPermissionsScreenState
               const SizedBox(height: 40),
               // Title
               Text(
-                'Stay on track with reminders',
+                'Enable app permissions',
                 style: AppTextStyles.headlineSmall.copyWith(
                   color: colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
@@ -62,7 +62,7 @@ class _OnboardingPermissionsScreenState
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'Enable notifications to get daily study reminders and never miss a review session.',
+                  'Enable notifications for study reminders and storage access to upload your study materials.',
                   style: AppTextStyles.bodyLarge.copyWith(
                     color: colorScheme.onSurfaceVariant,
                     height: 1.6,
@@ -75,7 +75,7 @@ class _OnboardingPermissionsScreenState
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _isRequesting ? null : _handleEnableNotifications,
+                  onPressed: _isRequesting ? null : _handleEnablePermissions,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     minimumSize: const Size(0, 56),
@@ -88,7 +88,7 @@ class _OnboardingPermissionsScreenState
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                           : Text(
-                            'Enable Reminders',
+                            'Enable Permissions',
                             style: AppTextStyles.button.copyWith(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -126,7 +126,7 @@ class _OnboardingPermissionsScreenState
     );
   }
 
-  Future<void> _handleEnableNotifications() async {
+  Future<void> _handleEnablePermissions() async {
     setState(() {
       _isRequesting = true;
     });
@@ -134,14 +134,17 @@ class _OnboardingPermissionsScreenState
     HapticFeedback.mediumImpact();
 
     try {
-      // Request notification permission
-      final status = await Permission.notification.request();
+      final permissionService = PermissionService.instance;
+      
+      // Request both notification and storage permissions
+      final notificationGranted = await permissionService.requestNotificationPermission();
+      final storageGranted = await permissionService.requestStoragePermission();
 
-      if (status.isGranted) {
-        // Permission granted
+      if (notificationGranted || storageGranted) {
+        // At least one permission granted
         HapticFeedback.mediumImpact();
       } else {
-        // Permission denied - that's okay, we'll continue
+        // Permissions denied - that's okay, we'll continue
         HapticFeedback.lightImpact();
       }
     } catch (e) {

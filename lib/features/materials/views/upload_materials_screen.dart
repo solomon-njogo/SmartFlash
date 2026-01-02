@@ -11,6 +11,7 @@ import '../../../core/providers/course_material_provider.dart';
 import '../../../core/providers/course_provider.dart';
 import '../../../data/models/course_material_model.dart';
 import '../../../core/utils/logger.dart';
+import '../../../core/services/permission_service.dart';
 
 class UploadMaterialsScreen extends StatefulWidget {
   final String? preselectedCourseId;
@@ -36,6 +37,55 @@ class _UploadMaterialsScreenState extends State<UploadMaterialsScreen> {
 
   Future<void> _pickFiles() async {
     Logger.info('File picker opened', tag: 'FileUpload');
+    
+    // Check and request storage permission before opening file picker
+    final permissionService = PermissionService.instance;
+    final hasPermission = await permissionService.ensureStoragePermission();
+    
+    if (!hasPermission) {
+      Logger.warning('Storage permission denied', tag: 'FileUpload');
+      if (mounted) {
+        // Check if permission is permanently denied
+        final isPermanentlyDenied = await permissionService.isStoragePermissionPermanentlyDenied();
+        
+        if (isPermanentlyDenied) {
+          // Show dialog to open settings
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Storage Permission Required'),
+              content: const Text(
+                'Storage access is needed to upload study materials. '
+                'Please enable it in app settings.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    await permissionService.openAppSettings();
+                  },
+                  child: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          );
+        } else {
+          // Permission was denied but not permanently - show simple message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Storage permission is required to upload files'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+      return;
+    }
+    
     final result = await FilePicker.platform.pickFiles(allowMultiple: true);
     final files = result?.files ?? [];
     
