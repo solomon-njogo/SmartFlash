@@ -97,13 +97,14 @@ flutter:
   assets:
     - .env
     - web/icons/
+    - assets/app_icons/
 
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "web/icons/Icon-512.png"
+  image_path: "assets/app_icons/Frame 12.png"
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "web/icons/Icon-192.png"
+  adaptive_icon_foreground: "assets/app_icons/Frame 12.png"
   remove_alpha_ios: true
 
   # An image asset can refer to one or more resolution-specific "variants", see
